@@ -7,7 +7,7 @@ This file records material used in this project that did not originate entirely 
 ### ChatGPT
 Used for:
 - brainstorming and refining the original game concept;
-- helping scope the project for a short 2–3 week development period;
+- helping scope the project for a short 2–3 week (in total work hours) for development period;
 - drafting and organizing the initial CP1 Game Design Document;
 - explaining Odin, Raylib, Git, and project-structure setup.
 
