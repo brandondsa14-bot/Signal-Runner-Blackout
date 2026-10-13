@@ -226,7 +226,13 @@ Failure restarts the current room quickly.
 
 ---
 
-## 15. Scope
+## 15. Scope — LOCKED FOR CP2
+
+**CP2 Scope Lock:** The Must-Have, Should-Have, and Nice-to-Have
+lists below are now locked. New features will not be added unless
+scope is explicitly revisited with the TA/instructor. Development
+will prioritize completing the Must-Have items before anything
+below the cut line.
 
 ### MUST-HAVE — required for the finished game
 1. Player movement and collision.
