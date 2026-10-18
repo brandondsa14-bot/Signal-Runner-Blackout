@@ -1,40 +1,69 @@
 # Signal Runner: Blackout
 
-A short 2D stealth-puzzle game built with **Odin + Raylib**.
+A short top-down murder-mystery / horror adventure built with **Odin + Raylib**.
 
 ## Current Status
-This repository is currently at the **CP1 documentation / project setup stage**.
-
-## Planned Gameplay
-The player explores a dark research facility and switches between signal frequencies to reveal hidden paths, disable hazards, and avoid enemies.
-
-## Tools
-- Odin
-- Raylib
-- Git / GitHub
-
-## Repository Structure
-
-```text
-src/                Game source code
-assets/             Art, sound, fonts, and other runtime assets
-data/               Tuning and level data
-docs/gdd.md         Game Design Document
-docs/postmortem.md  Architecture/project postmortem (completed later)
-ATTRIBUTION.md      AI-use and third-party asset disclosure
-README.md           Build/run instructions and project overview
-```
+This repository contains the **CP3 Assets checkpoint build**.
 
 ## Build and Run
-Build/run instructions will be updated as soon as the first playable build is committed.
-
-Expected command during development:
+From the repository root:
 
 ```bash
 odin run src
 ```
 
-If the project structure changes, this section will be updated so another person can build and run the game.
+Run the command from the project root so the game can find `assets/` and `data/`.
 
-## Documentation
-See [`docs/gdd.md`](docs/gdd.md) for the current Game Design Document.
+## Controls
+- `Enter` — advance title/story
+- `WASD` / Arrow Keys — move
+- `E` — interact
+- `1` — toggle Red signal in the visitor entrance
+- `Esc` — return to title
+
+## CP3 Resource Pipeline
+Resources are loaded once at startup in `src/resources.odin` and shared through the game:
+- player texture
+- dialogue portrait
+- looping ambience music
+- pickup/interact sound
+
+Gameplay tuning is read from:
+
+```text
+data/tuning.json
+```
+
+Level/spawn data is read from:
+
+```text
+data/levels/entrance.json
+data/levels/underground_hall.json
+data/levels/library.json
+data/levels/side_room.json
+data/levels/dungeon.json
+```
+
+## CP3 Live Demo
+Open `data/tuning.json` and change:
+
+```json
+"player_speed": 155.0
+```
+
+to, for example:
+
+```json
+"player_speed": 250.0
+```
+
+Save the file and run `odin run src` again. The player will move faster without any source-code edit.
+
+## Repository Structure
+
+```text
+src/       game source
+assets/    runtime textures and audio
+data/      tuning and level/spawn data
+docs/      GDD, postmortem starter, checkpoint notes
+```

@@ -5,3 +5,11 @@ Game_State :: enum {
     STORY,
     PLAYING,
 }
+
+Room_ID :: enum {
+    ENTRANCE,
+    UNDERGROUND_HALL,
+    LIBRARY,
+    SIDE_ROOM,
+    DUNGEON,
+}

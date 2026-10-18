@@ -2,7 +2,7 @@ package main
 
 import rl "vendor:raylib"
 
-MAX_ENTITIES :: 48
+MAX_ENTITIES :: 64
 
 Entity_Kind :: enum {
     PLAYER,
@@ -10,6 +10,11 @@ Entity_Kind :: enum {
     TERMINAL,
     CEMETERY_DOOR,
     SIGNAL_BARRIER,
+    GRAVE_CLUE,
+    LIBRARY_TRIGGER,
+    SIDE_ROOM_TRIGGER,
+    DUNGEON_DOOR,
+    RETURN_TRIGGER,
 }
 
 Entity :: struct {
@@ -31,6 +36,9 @@ entity_rect :: proc(entity: ^Entity) -> rl.Rectangle {
 
 add_entity :: proc(game: ^Game, entity: Entity) -> int {
     index := game.entity_count
+    if index >= MAX_ENTITIES {
+        return -1
+    }
     game.entities[index] = entity
     game.entity_count += 1
     return index
