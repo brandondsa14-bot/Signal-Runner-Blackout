@@ -475,6 +475,7 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
 
     case .FINAL_TERMINAL:
         if game.final_decrypted && has_required_final_evidence(game) {
+            game.case_transmitted = true
             game.ending_page = 0
             game.state = .ENDING
             stop_enemy_audio(game)

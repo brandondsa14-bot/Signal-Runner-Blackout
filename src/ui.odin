@@ -190,8 +190,11 @@ render_playing :: proc(game: ^Game) {
     if game.inventory_open {
         draw_inventory_overlay(game)
     }
+    if game.objectives_open {
+        draw_objective_log(game)
+    }
 
-    if game.enemy.active && game.enemy.state == .CHASE {
+    if game.enemy.active && game.enemy.state == .CHASE && !game.inventory_open && !game.objectives_open {
         rl.DrawRectangleLinesEx(rl.Rectangle{x=4, y=4, width=1092, height=632}, 4, rl.Color{150, 0, 0, 170})
         rl.DrawText("RUN", 520, 60, 26, rl.RED)
     }
@@ -207,19 +210,22 @@ scanner_color :: proc(mode: Scanner_Mode) -> rl.Color {
 }
 
 draw_hud :: proc(game: ^Game) {
-    rl.DrawRectangle(0, 0, 1100, 80, rl.Color{0, 0, 0, 220})
-    rl.DrawRectangle(0, 560, 1100, 80, rl.Color{0, 0, 0, 215})
-    rl.DrawText(room_name(game.room), 18, 12, 17, rl.RAYWHITE)
-    rl.DrawText(room_objective(game), 18, 39, 14, rl.GRAY)
+    // Thin persistent case-status bars. Larger investigation UI sits over the world.
+    rl.DrawRectangle(0, 0, 1100, 80, rl.Color{0, 0, 0, 225})
+    rl.DrawRectangle(0, 560, 1100, 80, rl.Color{0, 0, 0, 220})
+    rl.DrawText(room_name(game.room), 18, 13, 17, rl.RAYWHITE)
+    rl.DrawText("MARSHALL PD / CASE 04-17", 18, 40, 12, rl.Color{125, 112, 92, 255})
 
     draw_lives(game)
     draw_ai_state(game)
+    draw_current_objective_panel(game)
+    draw_minimap(game)
 
     if game.room == .ENTRANCE {
-        rl.DrawText("1 RED SIGNAL  |  E INTERACT  |  I INVENTORY", 18, 586, 15, rl.LIGHTGRAY)
+        rl.DrawText("1 RED SIGNAL  |  E INTERACT  |  I INVESTIGATION LOG  |  TAB INVENTORY", 18, 586, 14, rl.LIGHTGRAY)
     } else {
         draw_scanner_hud(game)
-        rl.DrawText("E INTERACT  |  F PULSE  |  I INVENTORY  |  V REDUCED FX", 18, 610, 14, rl.LIGHTGRAY)
+        rl.DrawText("E INTERACT  |  F PULSE  |  I LOG  |  TAB INVENTORY  |  V REDUCED FX", 18, 610, 13, rl.LIGHTGRAY)
     }
 
     if game.player_hidden {
@@ -289,7 +295,7 @@ draw_scanner_box :: proc(x, y: i32, text: cstring, mode: Scanner_Mode, selected:
 }
 
 draw_interaction_prompt :: proc(game: ^Game) {
-    if game.player_index < 0 || game.inventory_open { return }
+    if game.player_index < 0 || game.inventory_open || game.objectives_open { return }
 
     for i := 0; i < game.entity_count; i += 1 {
         entity := &game.entities[i]
@@ -355,7 +361,7 @@ draw_inventory_overlay :: proc(game: ^Game) {
     rl.DrawRectangle(120, 95, 860, 450, rl.Color{8, 9, 10, 245})
     rl.DrawRectangleLines(120, 95, 860, 450, rl.GRAY)
     rl.DrawText("OFFICER'S FIELD INVENTORY", 155, 120, 25, rl.RAYWHITE)
-    rl.DrawText("I — CLOSE", 845, 126, 14, rl.GRAY)
+    rl.DrawText("TAB — CLOSE", 825, 126, 14, rl.GRAY)
 
     y: i32 = 172
     if game.has_cemetery_key { draw_inventory_line(155, y, "Cemetery Key", "Visitor-gate key recovered from the surface terminal."); y += 42 }
@@ -374,6 +380,215 @@ draw_inventory_overlay :: proc(game: ^Game) {
 draw_inventory_line :: proc(x, y: i32, name, desc: cstring) {
     rl.DrawText(name, x, y, 17, rl.GOLD)
     rl.DrawText(desc, x + 245, y + 1, 14, rl.LIGHTGRAY)
+}
+
+
+draw_current_objective_panel :: proc(game: ^Game) {
+    id, found := current_objective(game)
+    x: i32 = 14
+    y: i32 = 90
+    w: i32 = 470
+    h: i32 = 70
+
+    rl.DrawRectangle(x, y, w, h, rl.Color{13, 12, 11, 220})
+    rl.DrawRectangleLines(x, y, w, h, rl.Color{82, 70, 53, 255})
+    rl.DrawRectangleLines(x + 3, y + 3, w - 6, h - 6, rl.Color{40, 36, 31, 255})
+    rl.DrawText("CURRENT OBJECTIVE", x + 14, y + 10, 12, rl.Color{164, 136, 83, 255})
+
+    if found {
+        rl.DrawText(objective_title(id), x + 14, y + 29, 16, rl.RAYWHITE)
+        rl.DrawText(room_objective(game), x + 14, y + 50, 11, rl.Color{162, 158, 145, 255})
+    } else {
+        rl.DrawText("Investigation complete.", x + 14, y + 31, 16, rl.Color{145, 170, 145, 255})
+    }
+}
+
+minimap_structure_color :: proc(kind: Entity_Kind) -> rl.Color {
+    #partial switch kind {
+    case .WALL:
+        return rl.Color{97, 88, 71, 255}
+    case .BLOCKER, .HIDE_SPOT:
+        return rl.Color{61, 58, 52, 255}
+    case .DOOR_TRIGGER, .CEMETERY_DOOR, .SIGNAL_BARRIER, .LASER_BARRIER:
+        return rl.Color{132, 91, 58, 255}
+    case:
+        return rl.Color{0, 0, 0, 0}
+    }
+}
+
+minimap_draws_structure :: proc(kind: Entity_Kind) -> bool {
+    #partial switch kind {
+    case .WALL, .BLOCKER, .HIDE_SPOT, .DOOR_TRIGGER, .CEMETERY_DOOR, .SIGNAL_BARRIER, .LASER_BARRIER:
+        return true
+    case:
+        return false
+    }
+}
+
+draw_minimap :: proc(game: ^Game) {
+    panel_x: i32 = 886
+    panel_y: i32 = 86
+    panel_w: i32 = 200
+    panel_h: i32 = 150
+
+    rl.DrawRectangle(panel_x, panel_y, panel_w, panel_h, rl.Color{9, 10, 10, 225})
+    rl.DrawRectangleLines(panel_x, panel_y, panel_w, panel_h, rl.Color{80, 72, 59, 255})
+    rl.DrawRectangleLines(panel_x + 3, panel_y + 3, panel_w - 6, panel_h - 6, rl.Color{38, 35, 31, 255})
+    rl.DrawText("FACILITY MAP", panel_x + 10, panel_y + 8, 11, rl.Color{155, 132, 88, 255})
+
+    map_x: i32 = panel_x + 10
+    map_y: i32 = panel_y + 28
+    map_w: i32 = panel_w - 20
+    map_h: i32 = 88
+    rl.DrawRectangle(map_x, map_y, map_w, map_h, rl.Color{18, 19, 18, 245})
+
+    scale_x := f32(map_w) / f32(SCREEN_WIDTH)
+    scale_y := f32(map_h) / f32(SCREEN_HEIGHT)
+
+    for i := 0; i < game.entity_count; i += 1 {
+        entity := &game.entities[i]
+        if !entity.active || !minimap_draws_structure(entity.kind) {
+            continue
+        }
+
+        mx := map_x + i32(entity.position[0] * scale_x)
+        my := map_y + i32(entity.position[1] * scale_y)
+        mw := i32(entity.size[0] * scale_x)
+        mh := i32(entity.size[1] * scale_y)
+        if mw < 1 { mw = 1 }
+        if mh < 1 { mh = 1 }
+        rl.DrawRectangle(mx, my, mw, mh, minimap_structure_color(entity.kind))
+    }
+
+    if game.player_index >= 0 {
+        player := &game.entities[game.player_index]
+        px := map_x + i32((player.position[0] + player.size[0] * 0.5) * scale_x)
+        py := map_y + i32((player.position[1] + player.size[1] * 0.5) * scale_y)
+        rl.DrawCircle(px, py, 3, rl.Color{205, 211, 198, 255})
+        rl.DrawCircleLines(px, py, 4, rl.Color{95, 130, 125, 255})
+    }
+
+    // The minimap never reveals the monster. Exploration pips only reveal rooms already visited.
+    for i := 0; i < ROOM_COUNT; i += 1 {
+        pip_x := panel_x + 12 + i32(i*17)
+        pip_y := panel_y + 128
+        color := rl.Color{35, 34, 31, 255}
+        if game.explored_rooms[i] { color = rl.Color{98, 87, 65, 255} }
+        if i == int(game.room) { color = rl.Color{180, 145, 75, 255} }
+        rl.DrawRectangle(i32(pip_x), i32(pip_y), 10, 6, color)
+    }
+
+    explored := explored_room_count(game)
+    if explored >= ROOM_COUNT {
+        rl.DrawText("AREA MAPPED", panel_x + 104, panel_y + 126, 9, rl.Color{125, 145, 125, 255})
+    } else {
+        rl.DrawText("EXPLORE", panel_x + 125, panel_y + 126, 9, rl.Color{92, 88, 78, 255})
+    }
+}
+
+draw_objective_checkmark :: proc(x, y: i32) {
+    color := rl.Color{117, 154, 116, 255}
+    rl.DrawLine(x, y + 7, x + 5, y + 12, color)
+    rl.DrawLine(x + 5, y + 12, x + 14, y + 2, color)
+}
+
+draw_objective_entry :: proc(game: ^Game, id: Objective_ID, y: i32) {
+    status := objective_status(game, id)
+    x: i32 = 145
+    w: i32 = 810
+    h: i32 = 24
+
+    bg := rl.Color{18, 17, 15, 245}
+    border := rl.Color{52, 47, 39, 255}
+    text_color := rl.Color{130, 126, 113, 255}
+
+    switch status {
+    case .COMPLETED:
+        bg = rl.Color{16, 21, 17, 245}
+        border = rl.Color{54, 82, 59, 255}
+        text_color = rl.Color{125, 154, 126, 255}
+    case .ACTIVE:
+        bg = rl.Color{39, 31, 22, 250}
+        border = rl.Color{173, 132, 65, 255}
+        text_color = rl.RAYWHITE
+    case .LOCKED:
+        bg = rl.Color{11, 11, 11, 245}
+        border = rl.Color{38, 36, 33, 255}
+        text_color = rl.Color{70, 68, 63, 255}
+    }
+
+    rl.DrawRectangle(x, y, w, h, bg)
+    rl.DrawRectangleLines(x, y, w, h, border)
+
+    switch status {
+    case .COMPLETED:
+        draw_objective_checkmark(x + 9, y + 4)
+        rl.DrawText(objective_title(id), x + 37, y + 6, 12, text_color)
+        rl.DrawText("COMPLETE", x + 728, y + 6, 10, rl.Color{92, 130, 93, 255})
+    case .ACTIVE:
+        rl.DrawRectangle(x + 8, y + 6, 12, 12, rl.Color{137, 43, 35, 255})
+        rl.DrawRectangleLines(x + 6, y + 4, 16, 16, rl.Color{190, 143, 70, 255})
+        rl.DrawText(objective_title(id), x + 37, y + 6, 12, text_color)
+        rl.DrawText("ACTIVE", x + 741, y + 6, 10, rl.Color{200, 153, 75, 255})
+    case .LOCKED:
+        rl.DrawText("?", x + 11, y + 4, 16, rl.Color{82, 77, 68, 255})
+        rl.DrawText("UNDISCOVERED LEAD", x + 37, y + 6, 12, text_color)
+        rl.DrawText("LOCKED", x + 741, y + 6, 10, rl.Color{65, 63, 59, 255})
+    }
+}
+
+draw_objective_log :: proc(game: ^Game) {
+    // Full-screen modal investigation journal: aged, restrained and readable rather than a bright RPG quest list.
+    rl.DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, rl.Color{0, 0, 0, 205})
+    x: i32 = 95
+    y: i32 = 42
+    w: i32 = 910
+    h: i32 = 552
+
+    rl.DrawRectangle(x, y, w, h, rl.Color{14, 13, 12, 252})
+    rl.DrawRectangleLines(x, y, w, h, rl.Color{104, 83, 54, 255})
+    rl.DrawRectangleLines(x + 5, y + 5, w - 10, h - 10, rl.Color{45, 40, 34, 255})
+
+    // Simple gothic/skeletal corner brackets.
+    bracket := rl.Color{91, 75, 54, 255}
+    rl.DrawLine(x + 15, y + 18, x + 55, y + 18, bracket)
+    rl.DrawLine(x + 15, y + 18, x + 15, y + 48, bracket)
+    rl.DrawLine(x + w - 15, y + 18, x + w - 55, y + 18, bracket)
+    rl.DrawLine(x + w - 15, y + 18, x + w - 15, y + 48, bracket)
+
+    rl.DrawText("INVESTIGATION LOG", x + 60, y + 20, 27, rl.Color{188, 166, 124, 255})
+    rl.DrawText("MARSHALL PD — CASE 04-17 / BLACKOUT", x + 60, y + 52, 12, rl.Color{91, 87, 77, 255})
+    rl.DrawText("I — CLOSE", x + 795, y + 27, 12, rl.Color{111, 104, 91, 255})
+
+    current, found := current_objective(game)
+    current_y := y + 82
+    rl.DrawRectangle(x + 35, current_y, w - 70, 66, rl.Color{31, 25, 19, 255})
+    rl.DrawRectangleLines(x + 35, current_y, w - 70, 66, rl.Color{151, 111, 57, 255})
+    rl.DrawText("CURRENT OBJECTIVE", x + 50, current_y + 10, 11, rl.Color{166, 128, 66, 255})
+    if found {
+        rl.DrawText(objective_title(current), x + 50, current_y + 28, 17, rl.RAYWHITE)
+        rl.DrawText(objective_description(current), x + 50, current_y + 49, 11, rl.Color{155, 151, 139, 255})
+    } else {
+        rl.DrawText("All recorded objectives are complete.", x + 50, current_y + 30, 17, rl.Color{125, 155, 125, 255})
+    }
+
+    completed := completed_objective_count(game)
+    rl.DrawText("MAIN OBJECTIVES", x + 50, y + 160, 13, rl.Color{139, 119, 84, 255})
+    rl.DrawText("? UNKNOWN   /   RED MARKER ACTIVE   /   CHECK COMPLETED", x + 420, y + 160, 10, rl.Color{77, 73, 66, 255})
+
+    list_y := y + 181
+    for i := 0; i < OBJECTIVE_COUNT; i += 1 {
+        draw_objective_entry(game, Objective_ID(i), list_y + i32(i*25))
+    }
+
+    rl.DrawText("INVESTIGATION PROGRESS", x + 50, y + 538, 10, rl.Color{85, 80, 69, 255})
+    // Progress is represented with fourteen small evidence marks rather than a modern progress bar.
+    for i := 0; i < OBJECTIVE_COUNT; i += 1 {
+        color := rl.Color{42, 39, 34, 255}
+        if i < completed { color = rl.Color{91, 124, 91, 255} }
+        rl.DrawRectangle(x + 205 + i32(i*18), y + 536, 11, 7, color)
+    }
+    rl.DrawText("TAB — FIELD INVENTORY", x + 720, y + 536, 10, rl.Color{85, 80, 69, 255})
 }
 
 draw_message :: proc(game: ^Game) {

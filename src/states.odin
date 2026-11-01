@@ -9,6 +9,8 @@ Game_State :: enum {
     ENDING,
 }
 
+ROOM_COUNT :: 10
+
 Room_ID :: enum {
     ENTRANCE,
     RECEPTION,

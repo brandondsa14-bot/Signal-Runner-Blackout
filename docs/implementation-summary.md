@@ -70,3 +70,12 @@ This file maps the major redesign requirements to the project files that impleme
 ## Verification
 
 See `docs/testing-summary.md` for static checks already completed and the exact runtime checklist to perform with `odin run src` on macOS before committing this build.
+
+
+## Investigation/objective tracking
+
+- `src/objectives.odin` defines fourteen story objectives and derives `LOCKED`, `ACTIVE`, or `COMPLETED` from real progression flags.
+- `src/ui.odin` renders the persistent Current Objective panel, aged Investigation Log, objective markers, and top-right minimap.
+- `src/data.odin` records explored rooms whenever a level is loaded.
+- The minimap reuses current entity geometry and does not reveal Clay Stalker position.
+- `I` opens the log; `Tab` preserves access to the pre-existing field inventory.

@@ -198,6 +198,10 @@ load_level_file :: proc(game: ^Game, path: string, room: Room_ID) -> bool {
     game.entity_count = 0
     game.player_index = -1
     game.room = room
+    room_index := int(room)
+    if room_index >= 0 && room_index < ROOM_COUNT {
+        game.explored_rooms[room_index] = true
+    }
 
     for spawn in level.spawns {
         kind, ok := entity_kind_from_string(spawn.kind)

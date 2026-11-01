@@ -123,7 +123,7 @@ Then verify these in order:
 10. Maintenance panel requires the screwdriver and RED scan.
 11. Containment nodes accept YELLOW / BLUE / RED and unlock the C-17 log.
 12. Final BLUE decrypt requires all three mandatory evidence exhibits and reaches the ending.
-13. Inventory (`I`) shows collected items without deleting them after room transitions.
+13. Investigation Log (`I`) opens/closes, tracks active/completed/locked objectives, and the field inventory (`Tab`) still preserves collected items after room transitions.
 14. The Clay Stalker spawns only in intended danger rooms, detects the player, enters ALERT/CHASE, loses line of sight, SEARCHes, then disengages.
 15. During an active chase, leaving for another unsafe connected room causes delayed cross-room pursuit.
 16. Hiding suppresses detection when entered with enough separation; the noise pipe attracts/investigates.
@@ -132,8 +132,19 @@ Then verify these in order:
 19. Respawn returns to the latest checkpoint with puzzle/evidence state preserved and short protection active.
 20. Third capture reaches Game Over; `R` starts a new investigation and Enter returns to the title screen.
 21. `V` reduces the intense jumpscare shake/audio treatment.
-22. Full mandatory progression is completable from cemetery to the definite ending.
+22. Top-right minimap shows current-room structure/player position, updates visited-room marks, and never reveals the monster.
+23. Full mandatory progression is completable from cemetery to the definite ending.
 
 ## Known limitation of this package review
 
 Because Odin/Raylib could not be executed in the packaging environment, compiler-specific type errors or runtime behaviours that only appear on macOS cannot be ruled out. If `odin run src` reports an error, use the exact compiler output to patch the relevant file before committing this version to GitHub.
+
+
+## Objective/minimap static review — PASS by source inspection
+
+- Objective completion is derived directly from persistent puzzle/evidence state rather than duplicated manual quest flags.
+- Fourteen main objectives have explicit active/completed/locked states.
+- `I` and `Tab` are mutually exclusive modal menus and both pause normal gameplay while open.
+- `load_level_file()` marks each loaded room as explored; exploration history is only reset by a new investigation.
+- Minimap geometry is generated from the current room's entity collection and deliberately omits enemy data.
+- The final objective is marked complete only when the final evidence transmission is actually triggered.

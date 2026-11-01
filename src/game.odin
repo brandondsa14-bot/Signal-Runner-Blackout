@@ -63,6 +63,9 @@ Game :: struct {
     player_facing:       Facing_Direction,
     player_hidden:       bool,
     inventory_open:      bool,
+    objectives_open:     bool,
+    explored_rooms:      [ROOM_COUNT]bool,
+    case_transmitted:    bool,
     lives:               int,
     checkpoint_room:     Room_ID,
     respawn_protection:  f32,
@@ -144,6 +147,11 @@ reset_progress :: proc(game: ^Game) {
     game.player_facing = .DOWN
     game.player_hidden = false
     game.inventory_open = false
+    game.objectives_open = false
+    game.case_transmitted = false
+    for i := 0; i < ROOM_COUNT; i += 1 {
+        game.explored_rooms[i] = false
+    }
     game.lives = 3
     game.checkpoint_room = .ENTRANCE
     game.respawn_protection = 0
@@ -399,6 +407,39 @@ update_ambient_events :: proc(game: ^Game, dt: f32) {
 }
 
 update_playing :: proc(game: ^Game, dt: f32) {
+    // Investigation log (I) and inventory (Tab) are modal and pause gameplay.
+    if game.objectives_open {
+        if rl.IsKeyPressed(.I) || rl.IsKeyPressed(.ESCAPE) {
+            game.objectives_open = false
+        } else if rl.IsKeyPressed(.TAB) {
+            game.objectives_open = false
+            game.inventory_open = true
+        }
+        return
+    }
+
+    if game.inventory_open {
+        if rl.IsKeyPressed(.TAB) || rl.IsKeyPressed(.ESCAPE) {
+            game.inventory_open = false
+        } else if rl.IsKeyPressed(.I) {
+            game.inventory_open = false
+            game.objectives_open = true
+        }
+        return
+    }
+
+    if rl.IsKeyPressed(.I) {
+        game.objectives_open = true
+        game.inventory_open = false
+        return
+    }
+
+    if rl.IsKeyPressed(.TAB) {
+        game.inventory_open = true
+        game.objectives_open = false
+        return
+    }
+
     if rl.IsKeyPressed(.ESCAPE) {
         stop_enemy_audio(game)
         game.state = .TITLE
@@ -412,10 +453,6 @@ update_playing :: proc(game: ^Game, dt: f32) {
             if game.reduced_fx { chase_volume *= 0.35 }
             rl.SetMusicVolume(game.resources.chase_music, chase_volume)
         }
-    }
-
-    if rl.IsKeyPressed(.I) {
-        game.inventory_open = !game.inventory_open
     }
 
     if game.message_timer > 0 { game.message_timer -= dt }

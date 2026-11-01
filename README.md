@@ -11,7 +11,7 @@ This build preserves the CP1–CP4 foundations and expands the game into a conne
 - CP1/CP2: GDD, entity architecture, explicit game states, update/render split.
 - CP3: resources loaded once at boot, external tuning values, external level/spawn data, attribution.
 - CP4: explicit monster finite-state machine and deliberate AI movement.
-- Expanded build: scanner puzzles, inventory, evidence progression, interconnected facility rooms, cross-room pursuit, hiding/distraction, three lives, checkpoints, jumpscare, Game Over, and a definite ending.
+- Expanded build: scanner puzzles, inventory, evidence progression, interconnected facility rooms, cross-room pursuit, hiding/distraction, three lives, checkpoints, jumpscare, Game Over, a definite ending, a live objective tracker, Investigation Log, and a room minimap.
 
 ## Build and Run
 
@@ -29,7 +29,8 @@ Run from the project root so `assets/` and `data/` resolve correctly.
 - `E` — interact / open doors / calibrate a selected frequency.
 - `1` / `2` / `3` — select RED / BLUE / YELLOW scanner frequency underground.
 - `F` — emit scanner pulse.
-- `I` — open/close field inventory and evidence descriptions.
+- `I` — open/close the Investigation Log / objective tracker.
+- `Tab` — open/close field inventory and evidence descriptions.
 - `V` — toggle reduced horror effects.
 - `Esc` — return to title during gameplay.
 - `R` — restart investigation from Game Over.
@@ -60,6 +61,15 @@ The scanner is central to the whole underground experience rather than being a o
 - **YELLOW** — security confirmation and electronic lock bypass.
 
 Scanner use can generate noise. Bad puzzle inputs can attract the monster.
+
+## Investigation Log and Minimap
+
+- A compact **Current Objective** panel remains visible during gameplay.
+- `I` opens a full dark/aged Investigation Log with active, completed and undiscovered objectives.
+- Completed entries use checkmarks; locked leads remain obscured with `?` markers until discovered.
+- `Tab` now opens the field inventory so the Investigation Log can own the `I` key.
+- The top-right minimap renders current-room collision structure and the officer position while intentionally hiding the monster.
+- Room exploration marks persist through normal room changes and checkpoint respawns.
 
 ## Clay Stalker AI
 
