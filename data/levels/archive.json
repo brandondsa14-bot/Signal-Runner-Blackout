@@ -1,0 +1,152 @@
+{
+  "spawns": [
+    {
+      "kind": "PLAYER",
+      "x": 110,
+      "y": 300,
+      "w": 32,
+      "h": 40
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 85,
+      "w": 1000,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 540,
+      "w": 410,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 640,
+      "y": 540,
+      "w": 410,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 110,
+      "w": 25,
+      "h": 140
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 350,
+      "w": 25,
+      "h": 190
+    },
+    {
+      "kind": "WALL",
+      "x": 1025,
+      "y": 110,
+      "w": 25,
+      "h": 430
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 180,
+      "y": 155,
+      "w": 115,
+      "h": 250
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 340,
+      "y": 155,
+      "w": 115,
+      "h": 250
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 690,
+      "y": 155,
+      "w": 115,
+      "h": 250
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 850,
+      "y": 155,
+      "w": 115,
+      "h": 250
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 475,
+      "y": 340,
+      "w": 175,
+      "h": 75
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 47,
+      "y": 250,
+      "w": 32,
+      "h": 100,
+      "target": "RECEPTION",
+      "target_x": 980,
+      "target_y": 300,
+      "interact": true
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 460,
+      "y": 536,
+      "w": 180,
+      "h": 32,
+      "target": "MAINTENANCE",
+      "target_x": 520,
+      "target_y": 130,
+      "interact": true
+    },
+    {
+      "kind": "ARCHIVE_RECORDS",
+      "x": 520,
+      "y": 352,
+      "w": 70,
+      "h": 45
+    },
+    {
+      "kind": "ARCHIVE_HIDDEN_CLUE",
+      "x": 885,
+      "y": 120,
+      "w": 52,
+      "h": 32
+    },
+    {
+      "kind": "OPTIONAL_NOTE",
+      "x": 520,
+      "y": 180,
+      "w": 34,
+      "h": 24
+    },
+    {
+      "kind": "HIDE_SPOT",
+      "x": 970,
+      "y": 410,
+      "w": 48,
+      "h": 115
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 110,
+      "y": 300,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 520,
+      "y": 485,
+      "w": 1,
+      "h": 1
+    }
+  ]
+}

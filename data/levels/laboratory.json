@@ -1,0 +1,194 @@
+{
+  "spawns": [
+    {
+      "kind": "PLAYER",
+      "x": 110,
+      "y": 290,
+      "w": 32,
+      "h": 40
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 85,
+      "w": 1000,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 540,
+      "w": 410,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 640,
+      "y": 540,
+      "w": 410,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 110,
+      "w": 25,
+      "h": 115
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 355,
+      "w": 25,
+      "h": 185
+    },
+    {
+      "kind": "WALL",
+      "x": 1025,
+      "y": 110,
+      "w": 25,
+      "h": 430
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 180,
+      "y": 300,
+      "w": 180,
+      "h": 80
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 455,
+      "y": 300,
+      "w": 180,
+      "h": 80
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 730,
+      "y": 300,
+      "w": 180,
+      "h": 80
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 180,
+      "y": 430,
+      "w": 150,
+      "h": 55
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 760,
+      "y": 430,
+      "w": 150,
+      "h": 55
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 47,
+      "y": 225,
+      "w": 32,
+      "h": 130,
+      "target": "SECURITY",
+      "target_x": 970,
+      "target_y": 290,
+      "interact": true
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 460,
+      "y": 536,
+      "w": 180,
+      "h": 32,
+      "target": "DETENTION",
+      "target_x": 520,
+      "target_y": 130,
+      "interact": true
+    },
+    {
+      "kind": "LAB_AUDIO_LOG",
+      "x": 150,
+      "y": 155,
+      "w": 45,
+      "h": 35
+    },
+    {
+      "kind": "LAB_RECEIVER_A",
+      "x": 300,
+      "y": 165,
+      "w": 54,
+      "h": 54
+    },
+    {
+      "kind": "LAB_RECEIVER_B",
+      "x": 525,
+      "y": 165,
+      "w": 54,
+      "h": 54
+    },
+    {
+      "kind": "LAB_RECEIVER_C",
+      "x": 750,
+      "y": 165,
+      "w": 54,
+      "h": 54
+    },
+    {
+      "kind": "HIDE_SPOT",
+      "x": 930,
+      "y": 405,
+      "w": 70,
+      "h": 125
+    },
+    {
+      "kind": "OPTIONAL_NOTE",
+      "x": 890,
+      "y": 155,
+      "w": 34,
+      "h": 24
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 115,
+      "y": 290,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 520,
+      "y": 470,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 210,
+      "y": 245,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 520,
+      "y": 430,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 870,
+      "y": 230,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 650,
+      "y": 150,
+      "w": 1,
+      "h": 1
+    }
+  ]
+}

@@ -1,15 +1,28 @@
 {
   "spawns": [
-    {"kind":"PLAYER", "x":520, "y":470, "w":32, "h":40},
+    {"kind":"PLAYER", "x":520, "y":485, "w":32, "h":40},
     {"kind":"WALL", "x":55, "y":80, "w":990, "h":28},
     {"kind":"WALL", "x":55, "y":550, "w":990, "h":28},
     {"kind":"WALL", "x":55, "y":108, "w":28, "h":442},
     {"kind":"WALL", "x":1017, "y":108, "w":28, "h":442},
+
     {"kind":"WALL", "x":185, "y":155, "w":18, "h":260},
     {"kind":"WALL", "x":330, "y":155, "w":18, "h":260},
     {"kind":"WALL", "x":475, "y":155, "w":18, "h":260},
     {"kind":"WALL", "x":750, "y":155, "w":18, "h":260},
     {"kind":"WALL", "x":885, "y":155, "w":18, "h":260},
-    {"kind":"RETURN_TRIGGER", "x":465, "y":522, "w":170, "h":56}
+
+    {"kind":"WALL", "x":83, "y":420, "w":387, "h":20},
+    {"kind":"LASER_BARRIER", "x":470, "y":420, "w":160, "h":20},
+    {"kind":"WALL", "x":630, "y":420, "w":387, "h":20},
+
+    {"kind":"WARDEN_DESK", "x":575, "y":325, "w":80, "h":45},
+    {"kind":"ENDING_EXIT", "x":925, "y":455, "w":72, "h":82},
+    {"kind":"RETURN_TRIGGER", "x":90, "y":505, "w":110, "h":45},
+
+    {"kind":"MONSTER_SPAWN", "x":250, "y":470, "w":1, "h":1},
+    {"kind":"MONSTER_SPAWN", "x":815, "y":470, "w":1, "h":1},
+    {"kind":"MONSTER_SPAWN", "x":420, "y":130, "w":1, "h":1},
+    {"kind":"MONSTER_SPAWN", "x":835, "y":130, "w":1, "h":1}
   ]
 }

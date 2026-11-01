@@ -1,6 +1,24 @@
 {
   "player_speed": 155.0,
-  "interact_distance": 130.0,
-  "message_duration": 2.5,
-  "ambient_volume": 0.35
+  "interact_distance": 118.0,
+  "message_duration": 2.7,
+  "ambient_volume": 0.30,
+  "scanner_range": 155.0,
+  "scanner_pulse_seconds": 0.35,
+  "monster_patrol_speed": 72.0,
+  "monster_chase_speed": 142.0,
+  "monster_detection_range": 250.0,
+  "monster_hearing_range": 360.0,
+  "monster_alert_seconds": 0.62,
+  "monster_lost_seconds": 1.35,
+  "monster_search_seconds": 4.2,
+  "monster_respawn_min": 5.0,
+  "monster_respawn_max": 10.0,
+  "monster_cross_room_delay": 0.85,
+  "monster_disengage_seconds": 2.2,
+  "chase_volume": 0.62,
+  "respawn_protection_seconds": 2.6,
+  "jumpscare_duration": 1.65,
+  "ambient_event_min": 9.0,
+  "ambient_event_max": 18.0
 }

@@ -327,3 +327,52 @@ Everything below this line is optional and will be removed first if time is limi
 - Playtesting
 - README / attribution updates
 - Final build verification
+
+---
+
+## Post-CP4 Cohesive Facility Redesign
+
+This redesign was requested after the original scope lock and builds on the existing checkpoint architecture rather than replacing the Odin/Raylib project.
+
+### Revised Underground Structure
+
+The original underground demo rooms are retained as legacy data files for checkpoint history, but the active progression now uses:
+
+1. Underground Reception
+2. Security Control
+3. Records Archive
+4. Medical Laboratory
+5. Detention Block D
+6. Maintenance Tunnels
+7. Containment Wing C
+8. Final Investigation
+9. Optional Supply Storage
+
+The cemetery visitor gate and hidden-grave staircase remain the surface introduction.
+
+### Revised Core Loop
+
+**Explore -> Investigate -> Discover Clues -> Solve Scanner/Item Puzzles -> Unlock New Areas -> Avoid the Clay Stalker -> Collect Evidence -> Uncover the Case.**
+
+### Frequency Scanner Identity
+
+The underground scanner uses three selectable modes:
+
+- **RED:** power/relay and high-energy containment calibration.
+- **BLUE:** hidden evidence and encrypted-data detection.
+- **YELLOW:** electronic security confirmation and lock bypass.
+
+Different rooms use the scanner differently so it does not become a repeated single-button door key.
+
+### Survival Rules
+
+- The officer begins with three lives.
+- Monster capture triggers a dedicated jumpscare state.
+- Puzzle/evidence progression remains persistent after capture.
+- Respawn occurs at the most recent safe checkpoint with brief protection.
+- A third capture produces Game Over.
+- Reduced horror effects can be toggled with `V`.
+
+### Clay Stalker
+
+The Clay Stalker is linked to Project Resonance as Subject C-17. It uses an explicit state machine, line-of-sight detection, authored waypoint navigation, steering, searching, disengagement, environmental sound attraction, hiding interactions, and cross-room pursuit between unsafe rooms.

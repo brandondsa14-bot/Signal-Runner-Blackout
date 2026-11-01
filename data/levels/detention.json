@@ -1,0 +1,187 @@
+{
+  "spawns": [
+    {
+      "kind": "PLAYER",
+      "x": 520,
+      "y": 130,
+      "w": 32,
+      "h": 40
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 85,
+      "w": 410,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 640,
+      "y": 85,
+      "w": 410,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 540,
+      "w": 1000,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 110,
+      "w": 25,
+      "h": 165
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 390,
+      "w": 25,
+      "h": 150
+    },
+    {
+      "kind": "WALL",
+      "x": 1025,
+      "y": 110,
+      "w": 25,
+      "h": 430
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 145,
+      "y": 145,
+      "w": 120,
+      "h": 135
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 300,
+      "y": 145,
+      "w": 120,
+      "h": 135
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 680,
+      "y": 145,
+      "w": 120,
+      "h": 135
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 835,
+      "y": 145,
+      "w": 120,
+      "h": 135
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 680,
+      "y": 355,
+      "w": 280,
+      "h": 115
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 460,
+      "y": 82,
+      "w": 180,
+      "h": 32,
+      "target": "LABORATORY",
+      "target_x": 520,
+      "target_y": 480,
+      "interact": true
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 47,
+      "y": 275,
+      "w": 32,
+      "h": 115,
+      "target": "MAINTENANCE",
+      "target_x": 980,
+      "target_y": 310,
+      "interact": true
+    },
+    {
+      "kind": "DETENTION_CONSOLE",
+      "x": 175,
+      "y": 430,
+      "w": 125,
+      "h": 65
+    },
+    {
+      "kind": "CELL_KEY_ITEM",
+      "x": 505,
+      "y": 205,
+      "w": 36,
+      "h": 24
+    },
+    {
+      "kind": "MISSING_EFFECTS",
+      "x": 760,
+      "y": 390,
+      "w": 52,
+      "h": 35
+    },
+    {
+      "kind": "HIDE_SPOT",
+      "x": 920,
+      "y": 405,
+      "w": 70,
+      "h": 120
+    },
+    {
+      "kind": "OPTIONAL_NOTE",
+      "x": 500,
+      "y": 450,
+      "w": 34,
+      "h": 24
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 520,
+      "y": 135,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 110,
+      "y": 330,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 500,
+      "y": 310,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 590,
+      "y": 180,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 370,
+      "y": 430,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 860,
+      "y": 290,
+      "w": 1,
+      "h": 1
+    }
+  ]
+}

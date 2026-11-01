@@ -7,6 +7,11 @@
     {"kind":"WALL", "x":1002, "y":118, "w":28, "h":422},
     {"kind":"LIBRARY_TRIGGER", "x":180, "y":90, "w":150, "h":48},
     {"kind":"SIDE_ROOM_TRIGGER", "x":720, "y":90, "w":150, "h":48},
-    {"kind":"DUNGEON_DOOR", "x":470, "y":510, "w":160, "h":58}
+    {"kind":"DUNGEON_DOOR", "x":470, "y":510, "w":160, "h":58},
+
+    {"kind":"MONSTER_SPAWN", "x":170, "y":285, "w":1, "h":1},
+    {"kind":"MONSTER_SPAWN", "x":865, "y":285, "w":1, "h":1},
+    {"kind":"MONSTER_SPAWN", "x":300, "y":455, "w":1, "h":1},
+    {"kind":"MONSTER_SPAWN", "x":780, "y":455, "w":1, "h":1}
   ]
 }

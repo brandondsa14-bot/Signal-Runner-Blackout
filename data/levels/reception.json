@@ -1,0 +1,167 @@
+{
+  "spawns": [
+    {
+      "kind": "PLAYER",
+      "x": 505,
+      "y": 465,
+      "w": 32,
+      "h": 40
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 85,
+      "w": 390,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 660,
+      "y": 85,
+      "w": 390,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 540,
+      "w": 410,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 640,
+      "y": 540,
+      "w": 410,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 110,
+      "w": 25,
+      "h": 230
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 440,
+      "w": 25,
+      "h": 100
+    },
+    {
+      "kind": "WALL",
+      "x": 1025,
+      "y": 110,
+      "w": 25,
+      "h": 140
+    },
+    {
+      "kind": "WALL",
+      "x": 1025,
+      "y": 350,
+      "w": 25,
+      "h": 190
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 330,
+      "y": 245,
+      "w": 430,
+      "h": 82
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 160,
+      "y": 390,
+      "w": 150,
+      "h": 58
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 790,
+      "y": 375,
+      "w": 120,
+      "h": 70
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 440,
+      "y": 82,
+      "w": 220,
+      "h": 32,
+      "target": "SECURITY",
+      "target_x": 510,
+      "target_y": 470,
+      "interact": true
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 47,
+      "y": 340,
+      "w": 32,
+      "h": 100,
+      "target": "STORAGE",
+      "target_x": 880,
+      "target_y": 300,
+      "interact": true
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 1021,
+      "y": 250,
+      "w": 32,
+      "h": 100,
+      "target": "ARCHIVE",
+      "target_x": 100,
+      "target_y": 300,
+      "interact": true
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 460,
+      "y": 536,
+      "w": 180,
+      "h": 32,
+      "target": "ENTRANCE",
+      "target_x": 970,
+      "target_y": 300,
+      "interact": true
+    },
+    {
+      "kind": "FUSE_ITEM",
+      "x": 405,
+      "y": 274,
+      "w": 34,
+      "h": 22
+    },
+    {
+      "kind": "POWER_PANEL",
+      "x": 875,
+      "y": 445,
+      "w": 64,
+      "h": 72
+    },
+    {
+      "kind": "OPTIONAL_NOTE",
+      "x": 220,
+      "y": 175,
+      "w": 34,
+      "h": 24
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 520,
+      "y": 125,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 985,
+      "y": 300,
+      "w": 1,
+      "h": 1
+    }
+  ]
+}
