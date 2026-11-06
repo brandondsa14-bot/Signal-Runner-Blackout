@@ -61,8 +61,10 @@ can_enter_room :: proc(game: ^Game, target: Room_ID) -> bool {
     case .STORAGE:
         return game.reception_power
     case .SECURITY:
-        return game.reception_power
-    case .ARCHIVE, .LABORATORY:
+        return game.reception_power && game.security_door_unlocked
+    case .ARCHIVE:
+        return game.security_unlocked && game.security_keycard && game.archive_door_unlocked
+    case .LABORATORY:
         return game.security_unlocked && game.security_keycard
     case .DETENTION:
         return game.security_keycard && game.archive_code_known && game.lab_alignment_solved
@@ -72,6 +74,18 @@ can_enter_room :: proc(game: ^Game, target: Room_ID) -> bool {
         return game.security_unlocked && game.lab_alignment_solved && game.maintenance_online
     case .FINAL_AREA:
         return game.containment_solved && game.has_experiment_log
+    }
+    return false
+}
+
+
+entity_requires_item_selection :: proc(game: ^Game, entity: ^Entity) -> bool {
+    if entity.kind != .DOOR_TRIGGER { return false }
+    if entity.target_room == .SECURITY {
+        return game.reception_power && !game.security_door_unlocked
+    }
+    if entity.target_room == .ARCHIVE {
+        return game.security_unlocked && game.security_keycard && !game.archive_door_unlocked
     }
     return false
 }
@@ -120,8 +134,10 @@ calibrate_security_sequence :: proc(game: ^Game, entity: ^Entity) {
         if game.security_sequence_step >= 4 {
             game.security_unlocked = true
             game.security_keycard = true
+            game.security_laser_shutdown = 1.25
+            add_item_with_progress(game, .SECURITY_KEYCARD)
             show_message(game, 26)
-            rl.PlaySound(game.resources.pickup_sound)
+            rl.PlaySound(game.resources.scanner_success)
         } else {
             show_message(game, 24)
         }
@@ -332,6 +348,7 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
     case .TERMINAL:
         if !game.has_cemetery_key {
             game.has_cemetery_key = true
+            add_item_with_progress(game, .CEMETERY_KEY)
             show_message(game, 1)
             rl.PlaySound(game.resources.pickup_sound)
         } else {
@@ -374,31 +391,31 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
     case .FUSE_ITEM:
         if !game.has_spare_fuse {
             game.has_spare_fuse = true
+            add_item_with_progress(game, .REPLACEMENT_FUSE)
             show_message(game, 20)
             rl.PlaySound(game.resources.pickup_sound)
         }
 
     case .POWER_PANEL:
-        if game.reception_power {
-            show_message(game, 63)
-        } else if game.has_spare_fuse {
-            game.reception_power = true
-            show_message(game, 21)
-            rl.PlaySound(game.resources.scanner_success)
-            set_checkpoint(game, .RECEPTION)
-        } else {
-            show_message(game, 22)
-        }
+        if game.reception_power { show_message(game, 63) }
+        else { show_message(game, 22) }
 
     case .SECURITY_CLUE:
+        game.security_clue_read = true
         show_message(game, 23)
 
     case .SECURITY_CONSOLE:
-        calibrate_security_sequence(game, entity)
+        if !game.security_router_seen {
+            game.security_router_seen = true
+            show_message(game, 86)
+        } else {
+            calibrate_security_sequence(game, entity)
+        }
 
     case .ARCHIVE_RECORDS:
         if !game.archive_records {
             game.archive_records = true
+            add_item_with_progress(game, .ARCHIVE_RECORDS)
             show_message(game, 27)
             rl.PlaySound(game.resources.pickup_sound)
             set_checkpoint(game, .ARCHIVE)
@@ -418,6 +435,7 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
             show_message(game, 65)
         } else if !game.has_cell_key {
             game.has_cell_key = true
+            add_item_with_progress(game, .CELL_KEY)
             show_message(game, 36)
             rl.PlaySound(game.resources.pickup_sound)
         }
@@ -430,6 +448,8 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
         } else if !game.has_personal_effects {
             game.has_personal_effects = true
             game.maintenance_badge = true
+            add_item_with_progress(game, .PERSONAL_EFFECTS)
+            add_item_with_progress(game, .MAINTENANCE_BADGE)
             show_message(game, 37)
             rl.PlaySound(game.resources.pickup_sound)
         } else {
@@ -439,20 +459,14 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
     case .SCREWDRIVER_ITEM:
         if !game.has_screwdriver {
             game.has_screwdriver = true
+            add_item_with_progress(game, .SCREWDRIVER)
             show_message(game, 38)
             rl.PlaySound(game.resources.pickup_sound)
         }
 
     case .MAINT_PANEL:
-        if game.maintenance_panel_open {
-            show_message(game, 68)
-        } else if game.has_screwdriver {
-            game.maintenance_panel_open = true
-            show_message(game, 40)
-            rl.PlaySound(game.resources.pickup_sound)
-        } else {
-            show_message(game, 39)
-        }
+        if game.maintenance_panel_open { show_message(game, 68) }
+        else { show_message(game, 39) }
 
     case .NOISE_PIPE:
         show_message(game, 69)
@@ -467,6 +481,7 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
             show_message(game, 70)
         } else if !game.has_experiment_log {
             game.has_experiment_log = true
+            add_item_with_progress(game, .EXPERIMENT_LOG)
             show_message(game, 45)
             rl.PlaySound(game.resources.pickup_sound)
         } else {
@@ -500,6 +515,7 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
     case .OPTIONAL_PHOTO:
         if !game.optional_photo {
             game.optional_photo = true
+            add_item_with_progress(game, .GROUP_PHOTO)
             show_message(game, 72)
             rl.PlaySound(game.resources.pickup_sound)
         } else {
@@ -509,7 +525,7 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
     case .HIDE_SPOT:
         handle_hide_spot(game, entity)
 
-    case .PLAYER, .WALL, .BLOCKER, .SIGNAL_BARRIER, .MONSTER_SPAWN, .MONSTER_ENTRY,
+    case .PLAYER, .WALL, .BLOCKER, .SIGNAL_BARRIER, .MONSTER_SPAWN, .MONSTER_ENTRY, .SEARCHABLE_CONTAINER,
          .LASER_BARRIER, .DETENTION_CONSOLE, .ARCHIVE_HIDDEN_CLUE,
          .LIBRARY_TRIGGER, .SIDE_ROOM_TRIGGER, .DUNGEON_DOOR, .RETURN_TRIGGER,
          .LIBRARY_KEY_ITEM, .STAFF_LOCKER, .WARDEN_DESK, .ENDING_EXIT:

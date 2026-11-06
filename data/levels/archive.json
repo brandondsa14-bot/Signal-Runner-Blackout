@@ -147,6 +147,15 @@
       "y": 485,
       "w": 1,
       "h": 1
+    },
+    {
+      "kind": "SEARCHABLE_CONTAINER",
+      "x": 760,
+      "y": 440,
+      "w": 100,
+      "h": 70,
+      "container": "ARCHIVE_FILE_CABINET",
+      "interact": true
     }
   ]
 }

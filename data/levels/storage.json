@@ -101,6 +101,15 @@
       "y": 370,
       "w": 34,
       "h": 24
+    },
+    {
+      "kind": "SEARCHABLE_CONTAINER",
+      "x": 865,
+      "y": 390,
+      "w": 105,
+      "h": 78,
+      "container": "STORAGE_PERSONAL_LOCKER",
+      "interact": true
     }
   ]
 }

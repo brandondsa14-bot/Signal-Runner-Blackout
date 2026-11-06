@@ -79,3 +79,19 @@ See `docs/testing-summary.md` for static checks already completed and the exact 
 - `src/data.odin` records explored rooms whenever a level is loaded.
 - The minimap reuses current entity geometry and does not reveal Clay Stalker position.
 - `I` opens the log; `Tab` preserves access to the pre-existing field inventory.
+
+## Search / Inventory / Lighting Expansion
+
+Added `src/items.odin` and `src/interaction_ui.odin` as reusable systems. Searchable containers are data-driven entities and persistent object state is stored on `Game`, so room reloads do not duplicate pickups. Contextual item-use targets compare stable `Item_ID` values rather than strings. Reception power is a persistent puzzle state and its lighting transition is rendered in the world pass before HUD/UI. The officer's one-frame sprite is preserved and enhanced with a procedural directional boot cycle.
+
+
+## Progressive Hint / Interaction Clarity Pass
+
+- `src/hints.odin` — reusable per-context stuck timers, context-aware hint text, progressive four-stage assistance, step-by-step overlay, and contextual Next Step derivation.
+- `src/game.odin` — persistent hint state, Security clue/router state, hint pause/toggle integration, and Security first-entry onboarding.
+- `src/puzzles.odin` — Security read/inspect state, clearer accepted/reset feedback, and laser shutdown timer.
+- `src/ui.odin` — Current Objective Next Step, hint status/help availability, hint notification/solution rendering, and improved Security result messages.
+- `src/interaction_ui.odin` / `src/items.odin` — visible `I — EXIT` modal control and `I` exit handling.
+- `src/facility_art.odin` — router screen no longer exposes the answer and laser grid animates down after success.
+- `data/levels/reception.json` — restores the 20A fuse as a visible world pickup.
+- `data/tuning.json` — external 60-second hint interval and notification duration.

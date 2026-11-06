@@ -30,7 +30,7 @@ objective_title :: proc(id: Objective_ID) -> cstring {
     case .VISITOR_TERMINAL:     return "Access the visitor terminal"
     case .HIDDEN_STAIRWAY:      return "Investigate the cemetery gravestone"
     case .RECEPTION_POWER:      return "Restore reception power"
-    case .SECURITY_ACCESS:      return "Break the security frequency lock"
+    case .SECURITY_ACCESS:      return "Disable the security frequency lock"
     case .ARCHIVE_RECORDS:      return "Identify the four missing people"
     case .ARCHIVE_CODE:         return "Recover the erased archive code"
     case .LAB_ALIGNMENT:        return "Re-align the laboratory receivers"

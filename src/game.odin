@@ -36,6 +36,10 @@ Game :: struct {
     security_sequence_step:  int,
     security_unlocked:       bool,
     security_keycard:        bool,
+    security_intro_seen:     bool,
+    security_clue_read:      bool,
+    security_router_seen:    bool,
+    security_laser_shutdown: f32,
     archive_records:         bool,
     archive_code_known:      bool,
     lab_audio_log:           bool,
@@ -58,6 +62,40 @@ Game :: struct {
     has_experiment_log:      bool,
     final_decrypted:         bool,
     optional_photo:          bool,
+
+
+    // Reusable inventory / searchable-container systems.
+    inventory:          [ITEM_COUNT]bool,
+    equipped_item:      Item_ID,
+    inventory_cursor:   int,
+    search_open:        bool,
+    active_container:   Container_ID,
+    search_cursor:      int,
+    search_feedback:    int,
+    search_object_taken:[SEARCH_OBJECT_COUNT]bool,
+    item_use_open:      bool,
+    item_use_target_index: int,
+    item_use_cursor:    int,
+    item_use_feedback:  int,
+    security_door_unlocked: bool,
+    archive_door_unlocked:  bool,
+
+    // Player animation and persistent Reception power-transition presentation.
+    player_moving:      bool,
+    player_walk_phase:  f32,
+    reception_power_transition: f32,
+    reception_power_flicker:    f32,
+
+    // Reusable progressive hint system. State is kept per puzzle context so
+    // leaving/re-entering a room does not erase accumulated hint progress.
+    hints_enabled:             bool,
+    hint_elapsed:              [HINT_CONTEXT_COUNT]f32,
+    hint_stage:                [HINT_CONTEXT_COUNT]int,
+    hint_progress_token:       [HINT_CONTEXT_COUNT]int,
+    hint_notification_timer:   f32,
+    hint_notification_context: Hint_Context,
+    hint_notification_stage:   int,
+    hint_solution_open:        bool,
 
     // Player presentation / survival.
     player_facing:       Facing_Direction,
@@ -121,6 +159,10 @@ reset_progress :: proc(game: ^Game) {
     game.security_sequence_step = 0
     game.security_unlocked = false
     game.security_keycard = false
+    game.security_intro_seen = false
+    game.security_clue_read = false
+    game.security_router_seen = false
+    game.security_laser_shutdown = 0
     game.archive_records = false
     game.archive_code_known = false
     game.lab_audio_log = false
@@ -143,6 +185,36 @@ reset_progress :: proc(game: ^Game) {
     game.has_experiment_log = false
     game.final_decrypted = false
     game.optional_photo = false
+
+    for i := 0; i < ITEM_COUNT; i += 1 { game.inventory[i] = false }
+    for i := 0; i < SEARCH_OBJECT_COUNT; i += 1 { game.search_object_taken[i] = false }
+    game.equipped_item = .NONE
+    game.inventory_cursor = 0
+    game.search_open = false
+    game.active_container = .NONE
+    game.search_cursor = 0
+    game.search_feedback = 0
+    game.item_use_open = false
+    game.item_use_target_index = -1
+    game.item_use_cursor = 0
+    game.item_use_feedback = 0
+    game.security_door_unlocked = false
+    game.archive_door_unlocked = false
+    game.player_moving = false
+    game.player_walk_phase = 0
+    game.reception_power_transition = 0
+    game.reception_power_flicker = 0
+
+    game.hints_enabled = true
+    for i := 0; i < HINT_CONTEXT_COUNT; i += 1 {
+        game.hint_elapsed[i] = 0
+        game.hint_stage[i] = 0
+        game.hint_progress_token[i] = -1
+    }
+    game.hint_notification_timer = 0
+    game.hint_notification_context = .NONE
+    game.hint_notification_stage = 0
+    game.hint_solution_open = false
 
     game.player_facing = .DOWN
     game.player_hidden = false
@@ -192,6 +264,10 @@ change_room :: proc(game: ^Game, target: Room_ID, target_position: rl.Vector2) {
 
         if target == .RECEPTION && game.checkpoint_room == .ENTRANCE {
             set_checkpoint(game, .RECEPTION)
+        }
+        if target == .SECURITY && !game.security_intro_seen {
+            game.security_intro_seen = true
+            show_message(game, 85)
         }
         if target == .CONTAINMENT {
             enemy_force_containment_event(game)
@@ -323,7 +399,7 @@ update_jumpscare :: proc(game: ^Game, dt: f32) {
 
 entity_solid_for_player :: proc(game: ^Game, entity: ^Entity) -> bool {
     #partial switch entity.kind {
-    case .WALL, .BLOCKER, .HIDE_SPOT, .DOOR_TRIGGER:
+    case .WALL, .BLOCKER, .HIDE_SPOT, .DOOR_TRIGGER, .SEARCHABLE_CONTAINER:
         return true
     case .SIGNAL_BARRIER:
         return !game.red_signal_on
@@ -373,6 +449,8 @@ update_player_facing_and_velocity :: proc(game: ^Game, player: ^Entity) {
         player.velocity[0] += speed
         game.player_facing = .RIGHT
     }
+
+    game.player_moving = player.velocity[0] != 0 || player.velocity[1] != 0
 }
 
 move_player_with_collision :: proc(game: ^Game, player: ^Entity, dt: f32) {
@@ -407,7 +485,21 @@ update_ambient_events :: proc(game: ^Game, dt: f32) {
 }
 
 update_playing :: proc(game: ^Game, dt: f32) {
-    // Investigation log (I) and inventory (Tab) are modal and pause gameplay.
+    // Only one modal interface may be active at a time. All modal screens pause world simulation.
+    if game.hint_solution_open {
+        if rl.IsKeyPressed(.H) || rl.IsKeyPressed(.I) || rl.IsKeyPressed(.ESCAPE) {
+            game.hint_solution_open = false
+        }
+        return
+    }
+    if game.search_open {
+        update_search_interface(game)
+        return
+    }
+    if game.item_use_open {
+        update_item_selector(game)
+        return
+    }
     if game.objectives_open {
         if rl.IsKeyPressed(.I) || rl.IsKeyPressed(.ESCAPE) {
             game.objectives_open = false
@@ -419,12 +511,7 @@ update_playing :: proc(game: ^Game, dt: f32) {
     }
 
     if game.inventory_open {
-        if rl.IsKeyPressed(.TAB) || rl.IsKeyPressed(.ESCAPE) {
-            game.inventory_open = false
-        } else if rl.IsKeyPressed(.I) {
-            game.inventory_open = false
-            game.objectives_open = true
-        }
+        update_inventory_interface(game)
         return
     }
 
@@ -455,9 +542,21 @@ update_playing :: proc(game: ^Game, dt: f32) {
         }
     }
 
+    if rl.IsKeyPressed(.K) {
+        game.hints_enabled = !game.hints_enabled
+        game.hint_notification_timer = 0
+    }
+
     if game.message_timer > 0 { game.message_timer -= dt }
     if game.scanner_pulse_timer > 0 { game.scanner_pulse_timer -= dt }
     if game.respawn_protection > 0 { game.respawn_protection -= dt }
+    if game.reception_power_flicker > 0 { game.reception_power_flicker -= dt }
+    if game.security_laser_shutdown > 0 { game.security_laser_shutdown -= dt }
+    if game.hint_notification_timer > 0 { game.hint_notification_timer -= dt }
+    if game.reception_power && game.reception_power_transition < 1.0 {
+        game.reception_power_transition += dt * 0.72
+        if game.reception_power_transition > 1.0 { game.reception_power_transition = 1.0 }
+    }
 
     update_ambient_events(game, dt)
 
@@ -485,6 +584,12 @@ update_playing :: proc(game: ^Game, dt: f32) {
     player := &game.entities[game.player_index]
     update_player_facing_and_velocity(game, player)
     move_player_with_collision(game, player, dt)
+    if game.player_moving {
+        cycle_speed := game.tuning.player_speed / 18.0
+        if game.enemy.state == .CHASE { cycle_speed *= 1.35 }
+        game.player_walk_phase += dt * cycle_speed
+        if game.player_walk_phase > 1000 { game.player_walk_phase = 0 }
+    }
 
     if rl.IsKeyPressed(.E) {
         old_room := game.room
@@ -493,7 +598,17 @@ update_playing :: proc(game: ^Game, dt: f32) {
             if !entity.active || entity.kind == .PLAYER || !near_entity(game, entity) {
                 continue
             }
-            handle_entity_interaction(game, entity)
+            if entity.kind == .SEARCHABLE_CONTAINER {
+                open_search_container(game, entity.container_id)
+            } else if entity.kind == .POWER_PANEL && !game.reception_power {
+                open_item_selector(game, i)
+            } else if entity.kind == .MAINT_PANEL && !game.maintenance_panel_open {
+                open_item_selector(game, i)
+            } else if entity.kind == .DOOR_TRIGGER && entity_requires_item_selection(game, entity) {
+                open_item_selector(game, i)
+            } else {
+                handle_entity_interaction(game, entity)
+            }
             if game.room != old_room {
                 return
             }
@@ -502,6 +617,7 @@ update_playing :: proc(game: ^Game, dt: f32) {
     }
 
     update_enemy_ai(game, dt)
+    update_hint_system(game, dt)
 }
 
 render_game :: proc(game: ^Game) {

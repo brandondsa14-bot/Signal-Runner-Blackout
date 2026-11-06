@@ -223,7 +223,7 @@ enemy_rect :: proc(game: ^Game) -> rl.Rectangle {
 
 entity_solid_for_enemy :: proc(game: ^Game, entity: ^Entity) -> bool {
     #partial switch entity.kind {
-    case .WALL, .BLOCKER, .HIDE_SPOT, .DOOR_TRIGGER:
+    case .WALL, .BLOCKER, .HIDE_SPOT, .DOOR_TRIGGER, .SEARCHABLE_CONTAINER:
         return true
     case .SIGNAL_BARRIER:
         return !game.red_signal_on

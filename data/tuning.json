@@ -2,7 +2,7 @@
   "player_speed": 155.0,
   "interact_distance": 118.0,
   "message_duration": 2.7,
-  "ambient_volume": 0.30,
+  "ambient_volume": 0.3,
   "scanner_range": 155.0,
   "scanner_pulse_seconds": 0.35,
   "monster_patrol_speed": 72.0,
@@ -20,5 +20,7 @@
   "respawn_protection_seconds": 2.6,
   "jumpscare_duration": 1.65,
   "ambient_event_min": 9.0,
-  "ambient_event_max": 18.0
+  "ambient_event_max": 18.0,
+  "hint_interval_seconds": 60.0,
+  "hint_notification_seconds": 8.0
 }

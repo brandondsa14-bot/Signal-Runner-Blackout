@@ -20,6 +20,7 @@ Entity_Kind :: enum {
     MONSTER_SPAWN,
     MONSTER_ENTRY,
     HIDE_SPOT,
+    SEARCHABLE_CONTAINER,
 
     // Reception / power.
     FUSE_ITEM,
@@ -81,6 +82,7 @@ Entity :: struct {
     target_room:       Room_ID,
     target_position:   rl.Vector2,
     requires_interact: bool,
+    container_id:      Container_ID,
 }
 
 entity_rect :: proc(entity: ^Entity) -> rl.Rectangle {

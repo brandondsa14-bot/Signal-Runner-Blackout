@@ -148,3 +148,50 @@ Because Odin/Raylib could not be executed in the packaging environment, compiler
 - `load_level_file()` marks each loaded room as explored; exploration history is only reset by a new investigation.
 - Minimap geometry is generated from the current room's entity collection and deliberately omits enemy data.
 - The final objective is marked complete only when the final evidence transmission is actually triggered.
+
+## Search / Inventory / Reception-Power verification checklist
+
+Source/data inspection verifies that:
+
+- searchable container entities resolve through the JSON loader and stable `Container_ID` parser;
+- container pickup state and inventory arrays live on persistent `Game` state rather than room-local data;
+- collected search objects are filtered from reopened container contents;
+- contextual item usage checks `Item_ID`, not display text;
+- the fuse is removed only on successful Reception power-panel use;
+- badge/archive-key/screwdriver uses do not remove those reusable items;
+- Reception power, Security door unlock and Archive door unlock persist across normal room reloads;
+- Reception's power flag drives both objective completion and lighting presentation;
+- the lighting overlay is applied before HUD/modal rendering;
+- the player walk phase advances only while movement input is active;
+- `power_restore.wav` is loaded once through the existing CP3 resource pipeline.
+
+Manual runtime verification is still required on the project author's Odin/Raylib setup for mouse hit-testing, exact UI spacing, collision feel, audio levels, and the complete Reception → Security → Archive progression.
+
+
+## Progressive hint / modal-exit / fuse-restoration verification
+
+Source/data inspection verifies that:
+
+- Search and item-use modal input accepts `I` or `Esc` as an exit path while preserving `E` for action confirmation.
+- Both relevant modal overlays render a visible upper-right `I — EXIT` reminder.
+- Reception once again contains exactly one world `FUSE_ITEM`; the searchable Reception supply cabinet no longer duplicates the fuse.
+- The Security Shift Note and router have separate persistent `read/seen` state.
+- The first Security router interaction explains controls instead of silently submitting a signal.
+- Accepted Security inputs preserve progress and report the accepted count; failed input resets to `0/4`.
+- Security completion sets a timed laser-shutdown presentation.
+- Hint timers are stored per context and are not reset by ordinary room transitions.
+- Hint timers pause for dialogue, menus/modal UI, and Clay Stalker ALERT/CHASE/SEARCH.
+- Forward progress resets the stuck timer; backward Security reset does not count as progress.
+- Automatic hints can be disabled with `K`.
+- Fourth-stage assistance opens with `H`; Security help derives the displayed sequence from `security_expected_mode()`.
+- Current Objective now exposes a contextual Next Step computed from live puzzle/inventory state.
+
+Manual runtime verification still required on macOS:
+1. Open Reception desk search and confirm `I` exits immediately.
+2. Open a contextual item selector and confirm `I` exits without using/consuming an item.
+3. Confirm the floor fuse is visible, collectible once, and fixes the Reception power panel.
+4. Enter Security for the first time and confirm the introductory dialogue appears once.
+5. Read the Shift Note and inspect the router; verify the first router interaction teaches controls.
+6. Confirm correct sequence feedback increments 1/4 -> 2/4 -> 3/4 and wrong input resets to 0/4.
+7. Confirm laser shutdown animation and opened east route after success.
+8. For rapid testing only, temporarily reduce `hint_interval_seconds` in `data/tuning.json`, then verify all four hint stages, `H` assistance, and `K` toggle before restoring the value to 60.0.

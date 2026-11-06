@@ -175,11 +175,26 @@ draw_reception :: proc(game: ^Game) {
     rl.DrawText("PROJECT RESONANCE", 780, 135, 14, rl.Color{95, 120, 111, 255})
 
     if !game.reception_power {
-        rl.DrawRectangle(50, 85, 1000, 480, rl.Color{0, 0, 0, 75})
+        // Readable blackout state: emergency fixtures and a heavy world-only darkness overlay.
+        rl.DrawRectangle(50, 85, 1000, 480, rl.Color{0, 0, 0, 125})
+        rl.DrawCircle(135, 155, 28, rl.Color{110, 24, 20, 42})
+        rl.DrawCircle(955, 155, 28, rl.Color{110, 24, 20, 42})
+        rl.DrawRectangle(118, 136, 34, 5, rl.Color{130, 35, 30, 130})
+        rl.DrawRectangle(938, 136, 34, 5, rl.Color{130, 35, 30, 130})
         rl.DrawText("EMERGENCY POWER ONLY", 430, 470, 18, rl.RED)
     } else {
-        rl.DrawRectangle(88, 134, 115, 7, rl.Color{130, 148, 116, 180})
-        rl.DrawRectangle(895, 134, 115, 7, rl.Color{130, 148, 116, 180})
+        // The restored room brightens over roughly 1.4 seconds and briefly flickers as the bus stabilizes.
+        darkness := u8(92.0 * (1.0 - game.reception_power_transition))
+        if darkness > 0 {
+            rl.DrawRectangle(50, 85, 1000, 480, rl.Color{0, 0, 0, darkness})
+        }
+        flicker_phase := i32(game.world_time * 18.0) % 5
+        if game.reception_power_flicker > 0 && (flicker_phase == 0 || flicker_phase == 3) {
+            rl.DrawRectangle(50, 85, 1000, 480, rl.Color{0, 0, 0, 75})
+        }
+        rl.DrawRectangle(88, 134, 115, 7, rl.Color{190, 205, 169, 225})
+        rl.DrawRectangle(895, 134, 115, 7, rl.Color{190, 205, 169, 225})
+        rl.DrawRectangle(455, 134, 190, 7, rl.Color{188, 201, 170, 210})
     }
 }
 
@@ -194,7 +209,7 @@ draw_security :: proc(game: ^Game) {
     rl.DrawRectangle(455, 310, 190, 70, rl.Color{42, 48, 52, 255})
     rl.DrawRectangle(470, 324, 160, 28, rl.Color{20, 60, 55, 255})
     rl.DrawText("FREQUENCY ROUTER", 470, 286, 15, rl.SKYBLUE)
-    rl.DrawText("R  B  Y  B", 496, 331, 20, rl.Color{135, 198, 180, 255})
+    rl.DrawText("INPUT:  [ ]  [ ]  [ ]  [ ]", 478, 331, 16, rl.Color{135, 198, 180, 255})
 
     rl.DrawRectangle(170, 285, 54, 36, rl.Color{110, 104, 82, 255})
     rl.DrawText("SHIFT NOTE", 152, 327, 12, rl.BEIGE)
@@ -203,6 +218,14 @@ draw_security :: proc(game: ^Game) {
     if !game.security_unlocked {
         for y: i32 = 230; y < 350; y += 18 {
             rl.DrawLine(930, y, 1020, y, rl.RED)
+        }
+    } else if game.security_laser_shutdown > 0 {
+        strength := game.security_laser_shutdown / 1.25
+        if strength > 1.0 { strength = 1.0 }
+        alpha := u8(210.0 * strength)
+        fade_color := rl.Color{230, 35, 42, alpha}
+        for y: i32 = 230; y < 350; y += 18 {
+            rl.DrawLine(930, y, 930 + i32(90.0 * strength), y, fade_color)
         }
     }
 }
@@ -389,11 +412,22 @@ draw_door_trigger :: proc(game: ^Game, entity: ^Entity) {
     }
 }
 
-draw_laser_barrier :: proc(entity: ^Entity, disabled: bool) {
+draw_laser_barrier :: proc(entity: ^Entity, disabled: bool, shutdown_timer: f32) {
     x := i32(entity.position[0]); y := i32(entity.position[1])
     w := i32(entity.size[0]); h := i32(entity.size[1])
     if disabled {
-        rl.DrawText("GRID OFF", x - 20, y + h/2, 13, rl.SKYBLUE)
+        if shutdown_timer > 0 {
+            strength := shutdown_timer / 1.25
+            if strength > 1.0 { strength = 1.0 }
+            alpha := u8(210.0 * strength)
+            fading := rl.Color{225, 35, 42, alpha}
+            for yy: i32 = y + 4; yy < y + h; yy += 15 {
+                rl.DrawLine(x, yy, x + i32(f32(w) * strength), yy, fading)
+            }
+            rl.DrawText("GRID SHUTDOWN", x - 54, y + h/2, 12, rl.SKYBLUE)
+        } else {
+            rl.DrawText("GRID OFF", x - 20, y + h/2, 13, rl.SKYBLUE)
+        }
         return
     }
     for yy: i32 = y + 4; yy < y + h; yy += 15 {
@@ -413,6 +447,18 @@ draw_hide_spot :: proc(entity: ^Entity) {
     w := i32(entity.size[0]); h := i32(entity.size[1])
     draw_cabinet(x, y, w, h, rl.Color{54, 61, 62, 255})
     rl.DrawText("HIDE", x + 12, y + h - 20, 11, rl.DARKGRAY)
+}
+
+draw_searchable_container :: proc(entity: ^Entity) {
+    x := i32(entity.position[0]); y := i32(entity.position[1])
+    w := i32(entity.size[0]); h := i32(entity.size[1])
+    color := rl.Color{69, 62, 51, 255}
+    if entity.container_id == .RECEPTION_SUPPLY || entity.container_id == .MAINTENANCE_LOCKER {
+        color = rl.Color{58, 66, 65, 255}
+    }
+    draw_cabinet(x, y, w, h, color)
+    rl.DrawRectangleLines(x + 4, y + h/2, w - 8, 1, rl.Color{30, 29, 27, 180})
+    rl.DrawCircle(x + w - 11, y + h/2 - 6, 2, rl.Color{164, 139, 88, 255})
 }
 
 draw_level_entities :: proc(game: ^Game) {
@@ -446,16 +492,26 @@ draw_level_entities :: proc(game: ^Game) {
             // Already rendered in cemetery art.
         case .HIDE_SPOT:
             draw_hide_spot(entity)
+        case .SEARCHABLE_CONTAINER:
+            draw_searchable_container(entity)
         case .FUSE_ITEM:
             if !game.has_spare_fuse { draw_simple_item(entity, rl.Color{160, 125, 52, 255}, "FUSE") }
         case .POWER_PANEL:
-            draw_simple_item(entity, rl.Color{55, 68, 66, 255}, "POWER")
+            if game.reception_power {
+                draw_simple_item(entity, rl.Color{52, 92, 67, 255}, "POWER ON")
+                x := i32(entity.position[0]); y := i32(entity.position[1])
+                rl.DrawCircle(x + i32(entity.size[0]) - 10, y + 10, 4, rl.GREEN)
+            } else {
+                draw_simple_item(entity, rl.Color{55, 68, 66, 255}, "POWER")
+                x := i32(entity.position[0]); y := i32(entity.position[1])
+                rl.DrawCircle(x + i32(entity.size[0]) - 10, y + 10, 4, rl.RED)
+            }
         case .SECURITY_CONSOLE:
             // Main console drawn in room art.
         case .SECURITY_CLUE:
             // Note drawn in room art.
         case .LASER_BARRIER:
-            draw_laser_barrier(entity, game.security_unlocked)
+            draw_laser_barrier(entity, game.security_unlocked, game.security_laser_shutdown)
         case .ARCHIVE_RECORDS:
             if !game.archive_records { draw_simple_item(entity, rl.Color{145, 116, 72, 255}, "FILES") }
         case .ARCHIVE_HIDDEN_CLUE:
@@ -504,6 +560,26 @@ draw_player_texture :: proc(game: ^Game, position: rl.Vector2) {
     rl.DrawTexturePro(game.resources.player_texture, source, dest, rl.Vector2{0, 0}, 0, rl.WHITE)
 
     x := i32(position[0]); y := i32(position[1])
+    // The original sprite has one frame, so the walk cycle is a subtle procedural boot animation.
+    // It preserves the officer's face/body identity and collision rectangle while making movement readable.
+    left_step: i32 = 0
+    right_step: i32 = 0
+    if game.player_moving {
+        if i32(game.player_walk_phase) % 2 == 0 { left_step = 2; right_step = -1 }
+        else { left_step = -1; right_step = 2 }
+    }
+    boot := rl.Color{15, 18, 22, 255}
+    switch game.player_facing {
+    case .UP, .DOWN:
+        rl.DrawRectangle(x + 7, y + 36 + left_step, 7, 5, boot)
+        rl.DrawRectangle(x + 19, y + 36 + right_step, 7, 5, boot)
+    case .LEFT:
+        rl.DrawRectangle(x + 5 + left_step, y + 35, 8, 5, boot)
+        rl.DrawRectangle(x + 17 + right_step, y + 35, 7, 5, boot)
+    case .RIGHT:
+        rl.DrawRectangle(x + 8 + left_step, y + 35, 7, 5, boot)
+        rl.DrawRectangle(x + 20 + right_step, y + 35, 8, 5, boot)
+    }
     switch game.player_facing {
     case .UP:
         rl.DrawRectangle(x + 7, y + 2, 18, 10, rl.Color{40, 27, 23, 255})
@@ -579,6 +655,8 @@ draw_atmosphere :: proc(game: ^Game) {
         p := game.entities[game.player_index].position
         px := i32(p[0]); py := i32(p[1])
         radius: i32 = 185
+        if game.room == .RECEPTION && !game.reception_power { radius = 145 }
+        if game.room == .RECEPTION && game.reception_power { radius = 245 }
         left_w := px - radius
         if left_w < 0 { left_w = 0 }
         right_x := px + radius

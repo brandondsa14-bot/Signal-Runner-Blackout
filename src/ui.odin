@@ -25,11 +25,14 @@ room_objective :: proc(game: ^Game) -> cstring {
         if !game.hidden_stair_found { return "Investigate the far-right gravestone." }
         return "Descend the hidden staircase."
     case .RECEPTION:
-        if !game.has_spare_fuse { return "Search reception for a spare fuse." }
-        if !game.reception_power { return "Install the fuse in the power panel." }
-        return "Security power is restored. Explore the facility."
+        if !game.reception_power {
+            if !game.has_spare_fuse { return "Search Reception and inspect the floor near the power panel for a 20A fuse." }
+            return "Select the 20A fuse at the power panel."
+        }
+        if !game.security_door_unlocked { return "Use the employee badge on the Security Control door." }
+        return "Security Control is accessible. Continue the investigation."
     case .SECURITY:
-        if !game.security_unlocked { return "Use the clue to solve the frequency sequence." }
+        if !game.security_unlocked { return contextual_next_step(game) }
         return "Security keycard acquired. Archive and lab are accessible."
     case .ARCHIVE:
         if !game.archive_records { return "Recover the missing-person intake records." }
@@ -183,6 +186,7 @@ render_playing :: proc(game: ^Game) {
 
     draw_interaction_prompt(game)
     draw_hud(game)
+    draw_hint_notification(game)
 
     if game.message_timer > 0 {
         draw_message(game)
@@ -193,8 +197,17 @@ render_playing :: proc(game: ^Game) {
     if game.objectives_open {
         draw_objective_log(game)
     }
+    if game.search_open {
+        draw_search_overlay(game)
+    }
+    if game.item_use_open {
+        draw_item_use_overlay(game)
+    }
+    if game.hint_solution_open {
+        draw_hint_solution_overlay(game)
+    }
 
-    if game.enemy.active && game.enemy.state == .CHASE && !game.inventory_open && !game.objectives_open {
+    if game.enemy.active && game.enemy.state == .CHASE && !game.inventory_open && !game.objectives_open && !game.search_open && !game.item_use_open && !game.hint_solution_open {
         rl.DrawRectangleLinesEx(rl.Rectangle{x=4, y=4, width=1092, height=632}, 4, rl.Color{150, 0, 0, 170})
         rl.DrawText("RUN", 520, 60, 26, rl.RED)
     }
@@ -220,12 +233,13 @@ draw_hud :: proc(game: ^Game) {
     draw_ai_state(game)
     draw_current_objective_panel(game)
     draw_minimap(game)
+    draw_equipped_item_hud(game)
 
     if game.room == .ENTRANCE {
         rl.DrawText("1 RED SIGNAL  |  E INTERACT  |  I INVESTIGATION LOG  |  TAB INVENTORY", 18, 586, 14, rl.LIGHTGRAY)
     } else {
         draw_scanner_hud(game)
-        rl.DrawText("E INTERACT  |  F PULSE  |  I LOG  |  TAB INVENTORY  |  V REDUCED FX", 18, 610, 13, rl.LIGHTGRAY)
+        rl.DrawText("E INTERACT | F PULSE | I LOG | TAB INVENTORY | H HELP | K HINTS | V FX", 18, 610, 12, rl.LIGHTGRAY)
     }
 
     if game.player_hidden {
@@ -295,7 +309,7 @@ draw_scanner_box :: proc(x, y: i32, text: cstring, mode: Scanner_Mode, selected:
 }
 
 draw_interaction_prompt :: proc(game: ^Game) {
-    if game.player_index < 0 || game.inventory_open || game.objectives_open { return }
+    if game.player_index < 0 || game.inventory_open || game.objectives_open || game.search_open || game.item_use_open || game.hint_solution_open { return }
 
     for i := 0; i < game.entity_count; i += 1 {
         entity := &game.entities[i]
@@ -309,11 +323,15 @@ draw_interaction_prompt :: proc(game: ^Game) {
             if game.hidden_stair_found { draw_prompt("E  DESCEND HIDDEN STAIRWAY") } else { draw_prompt("E  INSPECT GRAVESTONE") }
             return
         case .DOOR_TRIGGER:
-            if can_enter_room(game, entity.target_room) { draw_prompt("E  OPEN / PASS THROUGH") } else { draw_prompt("E  INSPECT LOCKED ACCESS") }
+            if entity_requires_item_selection(game, entity) { draw_prompt("E  EXAMINE LOCK / SELECT ITEM") }
+            else if can_enter_room(game, entity.target_room) { draw_prompt("E  OPEN / PASS THROUGH") }
+            else { draw_prompt("E  INSPECT LOCKED ACCESS") }
             return
         case .FUSE_ITEM:
             if !game.has_spare_fuse { draw_prompt("E  TAKE SPARE FUSE"); return }
-        case .POWER_PANEL: draw_prompt("E  INSPECT POWER PANEL"); return
+        case .POWER_PANEL:
+            if game.reception_power { draw_prompt("E  INSPECT POWER PANEL") } else { draw_prompt("E  SELECT ITEM FOR POWER PANEL") }
+            return
         case .SECURITY_CLUE: draw_prompt("E  READ SHIFT NOTE"); return
         case .SECURITY_CONSOLE: draw_prompt("E  INPUT CURRENT FREQUENCY"); return
         case .ARCHIVE_RECORDS:
@@ -341,6 +359,9 @@ draw_interaction_prompt :: proc(game: ^Game) {
         case .OPTIONAL_NOTE: draw_prompt("E  READ DOCUMENT"); return
         case .OPTIONAL_PHOTO:
             if !game.optional_photo { draw_prompt("E  TAKE PHOTOGRAPH"); return }
+        case .SEARCHABLE_CONTAINER:
+            draw_prompt("E  SEARCH CONTAINER")
+            return
         case .HIDE_SPOT:
             if game.player_hidden { draw_prompt("E  LEAVE HIDING PLACE") } else { draw_prompt("E  HIDE") }
             return
@@ -357,47 +378,30 @@ draw_prompt :: proc(text: cstring) {
     rl.DrawText(text, 310, 526, 15, rl.RAYWHITE)
 }
 
-draw_inventory_overlay :: proc(game: ^Game) {
-    rl.DrawRectangle(120, 95, 860, 450, rl.Color{8, 9, 10, 245})
-    rl.DrawRectangleLines(120, 95, 860, 450, rl.GRAY)
-    rl.DrawText("OFFICER'S FIELD INVENTORY", 155, 120, 25, rl.RAYWHITE)
-    rl.DrawText("TAB — CLOSE", 825, 126, 14, rl.GRAY)
-
-    y: i32 = 172
-    if game.has_cemetery_key { draw_inventory_line(155, y, "Cemetery Key", "Visitor-gate key recovered from the surface terminal."); y += 42 }
-    if game.has_spare_fuse { draw_inventory_line(155, y, "20A Ceramic Fuse", "Spare reception fuse; restored partial facility power."); y += 42 }
-    if game.security_keycard { draw_inventory_line(155, y, "Security Keycard", "Security desk card; grants archive and lab access."); y += 42 }
-    if game.archive_records { draw_inventory_line(155, y, "Missing-Person Intake Records", "Facility intake sheets naming all four missing people."); y += 42 }
-    if game.has_cell_key { draw_inventory_line(155, y, "Detention Cell Key", "Physical override for the old mechanical cell locks."); y += 42 }
-    if game.maintenance_badge { draw_inventory_line(155, y, "Maintenance Badge", "Recovered from Cell 04 belongings; opens maintenance access."); y += 42 }
-    if game.has_screwdriver { draw_inventory_line(155, y, "Flathead Screwdriver", "Facility tool used to open sealed relay panels."); y += 42 }
-    if game.has_experiment_log { draw_inventory_line(155, y, "C-17 Experiment Log", "Records linking Project Resonance to the Clay Stalker."); y += 42 }
-    if game.optional_photo { draw_inventory_line(155, y, "Damaged Group Photograph", "Optional evidence showing the four missing people at the cemetery."); y += 42 }
-
-    if y == 172 { rl.DrawText("No physical evidence collected yet.", 155, 190, 18, rl.GRAY) }
-}
-
-draw_inventory_line :: proc(x, y: i32, name, desc: cstring) {
-    rl.DrawText(name, x, y, 17, rl.GOLD)
-    rl.DrawText(desc, x + 245, y + 1, 14, rl.LIGHTGRAY)
-}
-
-
 draw_current_objective_panel :: proc(game: ^Game) {
     id, found := current_objective(game)
     x: i32 = 14
     y: i32 = 90
     w: i32 = 470
-    h: i32 = 70
+    h: i32 = 98
 
     rl.DrawRectangle(x, y, w, h, rl.Color{13, 12, 11, 220})
     rl.DrawRectangleLines(x, y, w, h, rl.Color{82, 70, 53, 255})
     rl.DrawRectangleLines(x + 3, y + 3, w - 6, h - 6, rl.Color{40, 36, 31, 255})
     rl.DrawText("CURRENT OBJECTIVE", x + 14, y + 10, 12, rl.Color{164, 136, 83, 255})
+    if game.hints_enabled {
+        rl.DrawText("K HINTS: ON", x + 365, y + 10, 9, rl.Color{112, 103, 88, 255})
+    } else {
+        rl.DrawText("K HINTS: OFF", x + 360, y + 10, 9, rl.Color{88, 82, 74, 255})
+    }
 
     if found {
-        rl.DrawText(objective_title(id), x + 14, y + 29, 16, rl.RAYWHITE)
-        rl.DrawText(room_objective(game), x + 14, y + 50, 11, rl.Color{162, 158, 145, 255})
+        rl.DrawText(objective_title(id), x + 14, y + 29, 15, rl.RAYWHITE)
+        rl.DrawText("NEXT STEP", x + 14, y + 51, 9, rl.Color{137, 110, 68, 255})
+        rl.DrawText(contextual_next_step(game), x + 14, y + 66, 10, rl.Color{162, 158, 145, 255})
+        if hint_help_available(game) {
+            rl.DrawText("H  STEP-BY-STEP HELP AVAILABLE", x + 250, y + 84, 9, rl.GOLD)
+        }
     } else {
         rl.DrawText("Investigation complete.", x + 14, y + 31, 16, rl.Color{145, 170, 145, 255})
     }
@@ -562,23 +566,25 @@ draw_objective_log :: proc(game: ^Game) {
 
     current, found := current_objective(game)
     current_y := y + 82
-    rl.DrawRectangle(x + 35, current_y, w - 70, 66, rl.Color{31, 25, 19, 255})
-    rl.DrawRectangleLines(x + 35, current_y, w - 70, 66, rl.Color{151, 111, 57, 255})
+    rl.DrawRectangle(x + 35, current_y, w - 70, 82, rl.Color{31, 25, 19, 255})
+    rl.DrawRectangleLines(x + 35, current_y, w - 70, 82, rl.Color{151, 111, 57, 255})
     rl.DrawText("CURRENT OBJECTIVE", x + 50, current_y + 10, 11, rl.Color{166, 128, 66, 255})
     if found {
         rl.DrawText(objective_title(current), x + 50, current_y + 28, 17, rl.RAYWHITE)
-        rl.DrawText(objective_description(current), x + 50, current_y + 49, 11, rl.Color{155, 151, 139, 255})
+        rl.DrawText(objective_description(current), x + 50, current_y + 49, 10, rl.Color{155, 151, 139, 255})
+        rl.DrawText("NEXT STEP:", x + 50, current_y + 66, 9, rl.Color{154, 121, 66, 255})
+        rl.DrawText(contextual_next_step(game), x + 125, current_y + 66, 9, rl.Color{171, 165, 150, 255})
     } else {
         rl.DrawText("All recorded objectives are complete.", x + 50, current_y + 30, 17, rl.Color{125, 155, 125, 255})
     }
 
     completed := completed_objective_count(game)
-    rl.DrawText("MAIN OBJECTIVES", x + 50, y + 160, 13, rl.Color{139, 119, 84, 255})
-    rl.DrawText("? UNKNOWN   /   RED MARKER ACTIVE   /   CHECK COMPLETED", x + 420, y + 160, 10, rl.Color{77, 73, 66, 255})
+    rl.DrawText("MAIN OBJECTIVES", x + 50, y + 176, 13, rl.Color{139, 119, 84, 255})
+    rl.DrawText("? UNKNOWN   /   RED MARKER ACTIVE   /   CHECK COMPLETED", x + 420, y + 176, 10, rl.Color{77, 73, 66, 255})
 
-    list_y := y + 181
+    list_y := y + 197
     for i := 0; i < OBJECTIVE_COUNT; i += 1 {
-        draw_objective_entry(game, Objective_ID(i), list_y + i32(i*25))
+        draw_objective_entry(game, Objective_ID(i), list_y + i32(i*23))
     }
 
     rl.DrawText("INVESTIGATION PROGRESS", x + 50, y + 538, 10, rl.Color{85, 80, 69, 255})
@@ -621,13 +627,17 @@ draw_message :: proc(game: ^Game) {
     case 23:
         rl.DrawText("SHIFT NOTE: 'Stabilize RED. Route BLUE.", x, 458, 18, rl.BEIGE)
         rl.DrawText("Confirm YELLOW. Seal on BLUE.'", x, 492, 18, rl.BEIGE)
-    case 24: rl.DrawText("Frequency accepted. Continue the sequence.", x, 476, 19, rl.SKYBLUE)
+    case 24:
+        if game.security_sequence_step == 1 { rl.DrawText("SIGNAL ACCEPTED — 1/4 frequencies confirmed.", x, 476, 18, rl.SKYBLUE) }
+        else if game.security_sequence_step == 2 { rl.DrawText("SIGNAL ACCEPTED — 2/4 frequencies confirmed.", x, 476, 18, rl.SKYBLUE) }
+        else if game.security_sequence_step == 3 { rl.DrawText("SIGNAL ACCEPTED — 3/4 frequencies confirmed.", x, 476, 18, rl.SKYBLUE) }
+        else { rl.DrawText("Frequency accepted. Continue the sequence.", x, 476, 18, rl.SKYBLUE) }
     case 25:
-        rl.DrawText("SEQUENCE FAILED — ROUTER RESET.", x, 462, 20, rl.RED)
-        rl.DrawText("The alarm echoed down the corridor...", x, 495, 17, rl.GRAY)
+        rl.DrawText("FREQUENCY MISMATCH — ROUTER RESET TO 0/4.", x, 462, 18, rl.RED)
+        rl.DrawText("Check the Shift Note. The alarm echoed down the corridor...", x, 495, 16, rl.GRAY)
     case 26:
-        rl.DrawText("SECURITY ROUTER UNLOCKED.", x, 458, 21, rl.GREEN)
-        rl.DrawText("OBTAINED: SECURITY KEYCARD", x, 493, 20, rl.GOLD)
+        rl.DrawText("SECURITY FREQUENCY LOCK DISABLED.", x, 458, 19, rl.GREEN)
+        rl.DrawText("Laser grid shutting down. Security keycard ejected; lab route open.", x, 493, 15, rl.SKYBLUE)
     case 27:
         rl.DrawText("EVIDENCE: MISSING-PERSON INTAKE RECORDS", x, 458, 19, rl.GOLD)
         rl.DrawText("Lena Park, Mateo Ruiz, Evan Cole, Leah Morrison.", x, 493, 17, rl.LIGHTGRAY)
@@ -731,5 +741,23 @@ draw_message :: proc(game: ^Game) {
     case 80:
         rl.DrawText("VALE: 'If the police reach the mirror, purge everything.'", x, 458, 16, rl.BEIGE)
         rl.DrawText("The purge command was never completed.", x, 493, 17, rl.GRAY)
+    case 81:
+        rl.DrawText("That won't work here.", x, 458, 20, rl.RED)
+        rl.DrawText("The item stays in my inventory.", x, 493, 17, rl.LIGHTGRAY)
+    case 82:
+        rl.DrawText("There we go. Looks like the power's back on.", x, 458, 19, rl.GREEN)
+        rl.DrawText("The reception lighting bus is stabilizing.", x, 493, 17, rl.LIGHTGRAY)
+    case 83:
+        rl.DrawText("The employee badge still reads.", x, 458, 19, rl.GREEN)
+        rl.DrawText("Security Control access unlocked.", x, 493, 17, rl.LIGHTGRAY)
+    case 84:
+        rl.DrawText("The brass key fits the Records Archive lock.", x, 458, 18, rl.GREEN)
+        rl.DrawText("The key remains on my evidence ring.", x, 493, 17, rl.LIGHTGRAY)
+    case 85:
+        rl.DrawText("The security system is still active.", x, 458, 19, rl.LIGHTGRAY)
+        rl.DrawText("That Frequency Router controls the lasers. There must be a clue nearby.", x, 493, 15, rl.BEIGE)
+    case 86:
+        rl.DrawText("The router accepts RED, BLUE and YELLOW scanner signals.", x, 458, 16, rl.SKYBLUE)
+        rl.DrawText("Select a colour with 1/2/3, then press E here to submit it.", x, 493, 15, rl.LIGHTGRAY)
     }
 }

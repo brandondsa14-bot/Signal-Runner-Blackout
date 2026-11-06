@@ -104,3 +104,17 @@ This approach was chosen because:
 5. Cross-room pursuit is handled at the room-transition layer, where the monster enters through a `MONSTER_ENTRY` marker corresponding to the doorway the player actually used, after a short delay.
 
 The monster also interacts with systems already built in earlier checkpoints: room data, collision, audio resources, scanner/noise events, player state, checkpoints, and game-state transitions.
+
+## Search / Inventory / Lighting Expansion
+
+ChatGPT / OpenAI assisted with the reusable stable-ID inventory/container architecture, modal interaction UI integration, contextual item-use flow, procedural walking-leg animation, Reception lighting transition, and related documentation. The feature set was integrated into the existing Odin + Raylib project structure rather than replacing prior checkpoint systems.
+
+### `assets/power_restore.wav`
+- Original synthesized electrical relay / rising-power cue created specifically for Signal Runner: Blackout during this implementation pass.
+- Used when the correct 20A fuse is successfully installed in Underground Reception.
+- Loaded once at startup through the existing shared resource pipeline.
+
+
+## Progressive Hint / Puzzle-Clarity Expansion
+
+ChatGPT / OpenAI assisted with the reusable context-aware hint-state architecture, Security Control onboarding/feedback pass, objective Next Step integration, modal exit-control improvements, and related verification/documentation. No new third-party visual or audio assets were added for this pass.

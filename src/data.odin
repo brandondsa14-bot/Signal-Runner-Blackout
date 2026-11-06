@@ -31,6 +31,9 @@ Tuning :: struct {
     jumpscare_duration:         f32,
     ambient_event_min:          f32,
     ambient_event_max:          f32,
+
+    hint_interval_seconds:      f32,
+    hint_notification_seconds:  f32,
 }
 
 Spawn_Data :: struct {
@@ -43,6 +46,7 @@ Spawn_Data :: struct {
     target_x:   f32,
     target_y:   f32,
     interact:   bool,
+    container:  string,
 }
 
 Level_Data :: struct {
@@ -73,6 +77,8 @@ load_tuning :: proc(path: string) -> Tuning {
         jumpscare_duration = 1.65,
         ambient_event_min = 9.0,
         ambient_event_max = 18.0,
+        hint_interval_seconds = 60.0,
+        hint_notification_seconds = 8.0,
     }
 
     data, read_err := os.read_entire_file(path, context.allocator)
@@ -103,6 +109,7 @@ entity_kind_from_string :: proc(kind: string) -> (Entity_Kind, bool) {
     case "MONSTER_SPAWN":          return .MONSTER_SPAWN, true
     case "MONSTER_ENTRY":          return .MONSTER_ENTRY, true
     case "HIDE_SPOT":              return .HIDE_SPOT, true
+    case "SEARCHABLE_CONTAINER":   return .SEARCHABLE_CONTAINER, true
     case "FUSE_ITEM":              return .FUSE_ITEM, true
     case "POWER_PANEL":            return .POWER_PANEL, true
     case "SECURITY_CONSOLE":       return .SECURITY_CONSOLE, true
@@ -137,6 +144,18 @@ entity_kind_from_string :: proc(kind: string) -> (Entity_Kind, bool) {
     case "ENDING_EXIT":            return .ENDING_EXIT, true
     }
     return .WALL, false
+}
+
+
+container_id_from_string :: proc(name: string) -> (Container_ID, bool) {
+    switch name {
+    case "RECEPTION_DESK":          return .RECEPTION_DESK, true
+    case "RECEPTION_SUPPLY":        return .RECEPTION_SUPPLY, true
+    case "ARCHIVE_FILE_CABINET":    return .ARCHIVE_FILE_CABINET, true
+    case "MAINTENANCE_LOCKER":      return .MAINTENANCE_LOCKER, true
+    case "STORAGE_PERSONAL_LOCKER": return .STORAGE_PERSONAL_LOCKER, true
+    }
+    return .NONE, false
 }
 
 room_id_from_string :: proc(name: string) -> (Room_ID, bool) {
@@ -191,6 +210,9 @@ load_level_file :: proc(game: ^Game, path: string, room: Room_ID) -> bool {
             if len(spawn.target) > 0 {
                 delete(spawn.target)
             }
+            if len(spawn.container) > 0 {
+                delete(spawn.container)
+            }
         }
         delete(level.spawns)
     }
@@ -218,6 +240,14 @@ load_level_file :: proc(game: ^Game, path: string, room: Room_ID) -> bool {
             }
         }
 
+        container_id: Container_ID = .NONE
+        if len(spawn.container) > 0 {
+            parsed_container, container_ok := container_id_from_string(spawn.container)
+            if container_ok {
+                container_id = parsed_container
+            }
+        }
+
         index := add_entity(game, Entity{
             kind = kind,
             position = rl.Vector2{spawn.x, spawn.y},
@@ -227,6 +257,7 @@ load_level_file :: proc(game: ^Game, path: string, room: Room_ID) -> bool {
             target_room = target_room,
             target_position = rl.Vector2{spawn.target_x, spawn.target_y},
             requires_interact = spawn.interact,
+            container_id = container_id,
         })
 
         if kind == .PLAYER {

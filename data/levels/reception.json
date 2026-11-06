@@ -130,10 +130,10 @@
     },
     {
       "kind": "FUSE_ITEM",
-      "x": 405,
-      "y": 274,
-      "w": 34,
-      "h": 22
+      "x": 748,
+      "y": 468,
+      "w": 28,
+      "h": 18
     },
     {
       "kind": "POWER_PANEL",
@@ -162,6 +162,24 @@
       "y": 300,
       "w": 1,
       "h": 1
+    },
+    {
+      "kind": "SEARCHABLE_CONTAINER",
+      "x": 405,
+      "y": 260,
+      "w": 72,
+      "h": 58,
+      "container": "RECEPTION_DESK",
+      "interact": true
+    },
+    {
+      "kind": "SEARCHABLE_CONTAINER",
+      "x": 930,
+      "y": 160,
+      "w": 62,
+      "h": 120,
+      "container": "RECEPTION_SUPPLY",
+      "interact": true
     }
   ]
 }
