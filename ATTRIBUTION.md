@@ -1,5 +1,7 @@
 # ATTRIBUTION
 
+This file records external assets, original project work, inspirations, and AI-assisted development used in **Signal Runner: Blackout**. Existing credits are preserved and later feature passes are documented below so the project can be reviewed honestly as a university game-development submission.
+
 ## AI Use
 
 ChatGPT / OpenAI was used as a development assistant throughout the project for:
@@ -10,37 +12,67 @@ ChatGPT / OpenAI was used as a development assistant throughout the project for:
 - CP3 resource loading, external tuning/level data, and checkpoint documentation;
 - CP4 enemy finite-state-machine design and movement justification;
 - the later cohesive facility redesign, puzzle dependency design, inventory/survival systems, cross-room pursuit, code organization, source review, and documentation;
-- assistance drafting original programmer-art concepts and the dedicated monster close-up asset.
+- assistance drafting original programmer-art concepts and the dedicated monster close-up asset;
+- the objective tracker, Investigation Log and minimap implementation;
+- reusable searchable-container and stable-ID inventory systems;
+- contextual item-use logic, item persistence/consumption rules, and modal interaction UI;
+- procedural officer walking-leg animation and Reception power/lighting transition;
+- the reusable progressive hint system, Security Control onboarding/feedback, contextual Next Step guidance, and debugging of Odin compiler issues.
 
-The project author remains responsible for reviewing, running, understanding, and demonstrating the submitted code.
+AI assistance included code generation, refactoring suggestions, debugging, design iteration, documentation drafting, and creation/assistance with some original project-only assets. No claim is made that third-party games supplied code or assets. The project author remains responsible for reviewing, running, understanding, and demonstrating the submitted code.
 
-## Existing / User-Provided Assets
+---
+
+## External / User-Provided Assets
+
+The following files were provided by the project author and are not claimed as original project-owned audio.
+
+### `assets/ambience.mp3`
+- User-provided file derived from the **Danganronpa** soundtrack.
+- Used as temporary looping ambience at the user's request.
+- Creator / rights holder: requires confirmation by the project author.
+- Source URL: not provided in the project materials and therefore not invented here.
+- Licence / permission: not independently verified.
+- Submission note: replace with original or appropriately licensed music before public distribution if course-use permission is not confirmed.
+
+### `assets/pickup.mp3`
+- User-provided file identified by the project author as **“Puppet Combo item pickup sound effect (HQ)”**.
+- Used for pickups and item-discovery feedback.
+- Creator / rights holder: attributed by filename/request to Puppet Combo; exact original creator/rights information requires confirmation.
+- Source URL: not provided in the project materials and therefore not invented here.
+- Licence / permission: not independently verified.
+- Submission note: replace with an original or appropriately licensed sound before public distribution if permission is not confirmed.
+
+---
+
+## Original / Project-Specific Visual Assets
 
 ### `assets/player_police.png`
 - Original project asset created specifically for Signal Runner: Blackout with AI-assisted pixel-art drafting.
 - No third-party character sprite sheet was copied.
+- The later walking animation keeps this asset and adds procedural leg/boot motion in code rather than importing a third-party animation sheet.
 
 ### `assets/player_portrait.png`
 - Original project asset created specifically for Signal Runner: Blackout with AI-assisted pixel-art drafting.
 - Used for officer dialogue.
 
-### `assets/ambience.mp3`
-- User-provided file derived from the Danganronpa soundtrack.
-- Used as temporary looping ambience at the user's request.
-- Third-party copyright/licensing rights were not independently verified.
-- Replace with original or appropriately licensed music before public distribution if permission is unavailable.
+### `assets/monster_jumpscare.png`
+- Original 640×640 close-up image created specifically for the Clay Stalker capture sequence with AI-assisted asset development.
+- It is separate from the small gameplay monster and is not a scaled copy of another game's monster or gameplay sprite.
 
-### `assets/pickup.mp3`
-- User-provided Puppet Combo item-pickup sound file.
-- Used for pickups and item discovery at the user's request.
-- Third-party copyright/licensing rights were not independently verified.
-- Replace with original or appropriately licensed audio before public distribution if permission is unavailable.
+### Facility / Clay Stalker Programmer Art
+- Cemetery, Underground Reception, Security Control, Records Archive, Medical Laboratory, Detention Block, Maintenance, Containment, Final Investigation, Storage, furniture, cells, monitors, bloodstains, pipes, scanner nodes, searchable-object markers, and the gameplay Clay Stalker are original project programmer art rendered primarily with Raylib primitives.
+- The uploaded Ao Oni screenshots were used only as a **visual benchmark for room density, readability, exploration depth, and survival-horror pacing**. Their layouts, sprites, code, and artwork were not copied into the project.
 
-## Original Project Audio Added in Later Builds
+---
+
+## Original / Project-Specific Audio Added in Later Builds
+
+The following sounds were created specifically for this project during AI-assisted development and are not credited to an external commercial game or sound library.
 
 ### `assets/monster_chase.wav`
 - Original synthesized chase loop created specifically for this project.
-- Loaded once at boot and played during monster ALERT/CHASE states.
+- Loaded once at boot and played during monster ALERT/CHASE behaviour.
 
 ### `assets/scanner_success.wav`
 - Original synthesized scanner-success cue created specifically for this project.
@@ -55,19 +87,16 @@ The project author remains responsible for reviewing, running, understanding, an
 ### `assets/distant_metal.wav`
 - Original synthesized metallic ambience cue created specifically for this project.
 
-## Original Visual Assets / Programmer Art
+### `assets/power_restore.wav`
+- Original synthesized electrical relay / rising-power cue created specifically for Signal Runner: Blackout.
+- Used when the correct 20A fuse is successfully installed in Underground Reception.
+- Loaded once at startup through the existing shared resource pipeline.
 
-### `assets/monster_jumpscare.png`
-- Original 640×640 close-up image created specifically for the Clay Stalker capture sequence.
-- It is separate from the small gameplay monster and is not a scaled copy of the gameplay sprite.
-
-### Facility / Clay Stalker Environment Art
-- Cemetery, reception, security room, archive, laboratory, detention block, maintenance areas, containment wing, final investigation area, storage, furniture, cells, monitors, bloodstains, pipes, scanner nodes, and the gameplay Clay Stalker are original programmer art rendered with Raylib primitives.
-- The uploaded Ao Oni screenshots were used only as a visual benchmark for room density, readability, and exploration depth; layouts and assets were not copied.
+---
 
 # CP4 AI / Movement Justification
 
-## State machine
+## Original implementation
 
 The Clay Stalker uses these explicit states in `src/states.odin` and `src/ai.odin`:
 
@@ -103,18 +132,152 @@ This approach was chosen because:
 4. Full A* would add complexity that the current authored rooms do not require.
 5. Cross-room pursuit is handled at the room-transition layer, where the monster enters through a `MONSTER_ENTRY` marker corresponding to the doorway the player actually used, after a short delay.
 
-The monster also interacts with systems already built in earlier checkpoints: room data, collision, audio resources, scanner/noise events, player state, checkpoints, and game-state transitions.
+The monster also interacts with systems built in earlier checkpoints: room data, collision, shared audio resources, scanner/noise events, player state, checkpoints, and game-state transitions.
 
-## Search / Inventory / Lighting Expansion
+## Inspiration
 
-ChatGPT / OpenAI assisted with the reusable stable-ID inventory/container architecture, modal interaction UI integration, contextual item-use flow, procedural walking-leg animation, Reception lighting transition, and related documentation. The feature set was integrated into the existing Odin + Raylib project structure rather than replacing prior checkpoint systems.
+- **Ao Oni** influenced the high-level idea of a threatening roaming/chasing creature, room-to-room survival pressure, and puzzle-horror pacing.
+- The Clay Stalker, its state machine, appearance logic, collision/navigation code, audio behaviour, room-transition logic, and visual design are original Signal Runner: Blackout implementations rather than copied Ao Oni code/assets.
 
-### `assets/power_restore.wav`
-- Original synthesized electrical relay / rising-power cue created specifically for Signal Runner: Blackout during this implementation pass.
-- Used when the correct 20A fuse is successfully installed in Underground Reception.
-- Loaded once at startup through the existing shared resource pipeline.
+---
 
+# CP4+ Facility / Survival-Horror Expansion
 
-## Progressive Hint / Puzzle-Clarity Expansion
+## Original implementation
 
-ChatGPT / OpenAI assisted with the reusable context-aware hint-state architecture, Security Control onboarding/feedback pass, objective Next Step integration, modal exit-control improvements, and related verification/documentation. No new third-party visual or audio assets were added for this pass.
+The later CP4-era redesign added or expanded:
+
+- an interconnected underground-facility progression;
+- scanner-driven RED / BLUE / YELLOW puzzle logic;
+- environmental evidence and multi-room puzzle dependencies;
+- three persistent lives, checkpoints, capture/jumpscare flow, respawn protection and Game Over;
+- cross-room Clay Stalker pursuit and safe-room disengagement;
+- hiding/noise/distraction interactions;
+- persistent objective tracking, Investigation Log and a room minimap;
+- an explicit ending based on transmitting the completed investigation.
+
+## Inspirations
+
+- **Ao Oni** — survival-horror exploration, room-based pursuit pressure and puzzle pacing.
+- Earlier GDD references such as **INSIDE**, **Mark of the Ninja**, and **Portal** informed atmosphere/readability, stealth-state clarity, and the idea of teaching a mechanic before combining it with later puzzles.
+- These titles are design references only; no code, maps, sprites, sounds, or other game assets from them are included in this project.
+
+## AI assistance
+
+ChatGPT / OpenAI assisted with implementation planning, Odin code generation/debugging, room/puzzle dependency design, state-machine reasoning, survival-system integration, documentation, and source-level review.
+
+---
+
+# Objective Tracker / Investigation Log / Minimap Expansion
+
+## Original implementation
+
+- `src/objectives.odin` defines story objectives and derives `LOCKED`, `ACTIVE`, and `COMPLETED` states from actual persistent game progress.
+- The persistent HUD shows the current objective and contextual Next Step.
+- `I` opens the full Investigation Log during normal play.
+- The minimap renders current-room structure and officer position from the existing room/entity data while deliberately hiding the monster.
+- Explored-room state persists through ordinary transitions/checkpoint respawns.
+
+## Inspiration
+
+The dark, aged, rectangular investigation-log presentation was based on user-supplied UI reference imagery and general survival-horror/quest-log presentation. No reference UI asset was copied directly into the game.
+
+## AI assistance
+
+ChatGPT / OpenAI assisted with objective-state architecture, HUD/log/minimap rendering logic, control integration, and documentation.
+
+---
+
+# Search / Inventory / Contextual Item-Use Expansion
+
+## Original implementation
+
+The project now uses reusable, stable-ID systems instead of one-off room-specific pickup text:
+
+- `src/items.odin` — item definitions, stable `Item_ID` values, persistent inventory state, container contents, item classes and contextual item checks.
+- `src/interaction_ui.odin` — dark inventory/search/item-use interfaces, navigation, selection, procedural item icons and modal exit reminders.
+- searchable drawers/cabinets/containers can contain multiple inspectable or collectable objects;
+- collected objects disappear from the source container and cannot be duplicated by re-entering the room;
+- incorrect item choices never consume the item;
+- consumables are removed only after successful use;
+- reusable keys/badges/tools remain in inventory;
+- evidence remains inspectable;
+- unlocked/powered states persist through room transitions.
+
+Examples include the Reception desk search, contextual power-panel fuse selection, employee-badge access, Archive key use and Maintenance screwdriver interaction.
+
+## AI assistance
+
+ChatGPT / OpenAI assisted with stable-ID architecture, reusable container definitions, modal UI code, inventory persistence, item-consumption rules, contextual item checks, and debugging/integration with the existing scanner/objective systems.
+
+---
+
+# Police Officer Walking Animation
+
+## Original implementation
+
+The existing one-frame police sprite is preserved. Because the current asset does not contain a complete four-direction walk sheet, the project adds a subtle procedural directional boot/leg cycle in code while the officer is moving. The cycle stops when movement stops and can speed up during pursuit. Player collision dimensions remain unchanged.
+
+## External assets
+
+No new third-party walking sprite sheet was introduced for this feature.
+
+## AI assistance
+
+ChatGPT / OpenAI assisted with the procedural animation approach and integration.
+
+---
+
+# Underground Reception Power / Lighting Expansion
+
+## Original implementation
+
+- Reception starts under dim emergency lighting rather than complete darkness.
+- The 20A fuse is a visible world pickup.
+- The player must explicitly select/use the fuse at the Reception power panel.
+- The fuse is consumed only after successful installation.
+- `assets/power_restore.wav` plays during activation.
+- The room briefly flickers and then brightens.
+- The persistent Reception-power state drives the lighting, objective completion and later access logic, so leaving/re-entering does not reset the puzzle.
+- HUD/modal UI is rendered separately so the darkness treatment does not make menus unreadable.
+
+## AI assistance
+
+ChatGPT / OpenAI assisted with the persistent power-state design, lighting-transition implementation, fuse/item integration and documentation.
+
+---
+
+# Progressive Hint / Puzzle-Clarity Expansion
+
+## Original implementation
+
+- `src/hints.odin` stores reusable hint contexts, per-context stuck timers, progress tokens, four-stage hint escalation, contextual text and step-by-step help.
+- Hint timers measure time without meaningful forward progress rather than total room time.
+- Timers pause during dialogue, inventory/search/item-use UI, Investigation Log, hint overlays, and Clay Stalker ALERT/CHASE/SEARCH behaviour.
+- Meaningful progress resets the stuck timer; leaving/re-entering does not erase the context's hint stage.
+- `K` toggles automatic hints.
+- After the final hint stage, `H` opens step-by-step help.
+- Security assistance reads the actual implemented puzzle sequence from `security_expected_mode()` instead of maintaining a separate invented solution.
+- The objective HUD uses live puzzle state to show a contextual **Next Step**.
+
+## Security Control clarity improvements
+
+- The Shift Note and Frequency Router have separate persistent read/seen states.
+- The router first explains the scanner controls rather than silently consuming input.
+- Correct entries report accepted progress.
+- Wrong inputs explicitly report that the sequence reset.
+- Successful completion visibly shuts down the laser barrier and updates the next objective.
+- The router display no longer exposes the full answer before the player investigates the clue.
+
+## AI assistance
+
+ChatGPT / OpenAI assisted with the reusable hint architecture, contextual progression logic, Security onboarding/feedback, modal exit-control improvements, Odin debugging, and documentation.
+
+---
+
+# Documentation / Project Integrity Notes
+
+- Existing credits above are intentionally retained rather than replaced.
+- No external source URL, licence, creator, or permission status is invented when it was not supplied or independently verified.
+- `README.md`, `docs/implementation-summary.md`, and `docs/testing-summary.md` describe the current controls, architecture and verification status.
+- A source-level/static review is not the same as a successful runtime test. The latest build should be verified with `odin check src` and `odin run src` on the project author's macOS Odin/Raylib setup before final submission.
