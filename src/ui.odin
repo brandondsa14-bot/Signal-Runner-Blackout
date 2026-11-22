@@ -114,15 +114,24 @@ render_ending :: proc(game: ^Game) {
     case 1:
         rl.DrawText("THREE VICTIMS WERE RECOVERED.", 245, 225, 32, rl.RAYWHITE)
         rl.DrawText("LEAH MORRISON WAS FOUND ALIVE IN OBSERVATION.", 155, 295, 26, rl.GOLD)
+        rl.DrawText("Lena Park, Mateo Ruiz and Evan Cole did not survive.", 210, 350, 20, rl.GRAY)
     case 2:
         rl.DrawText("PROJECT RESONANCE IDENTIFIED C-17", 235, 220, 30, rl.RAYWHITE)
         rl.DrawText("AS FORMER SECURITY OFFICER ELIAS VOSS.", 220, 275, 28, rl.RAYWHITE)
-        rl.DrawText("The Clay Stalker was made here.", 330, 345, 23, rl.RED)
+        rl.DrawText("A conductive neural matrix turned him into the Stalker.", 185, 345, 20, rl.RED)
     case 3:
-        rl.DrawText("DR. ADRIAN VALE'S RECORDS", 315, 215, 31, rl.RAYWHITE)
-        rl.DrawText("LINKED HIM TO THE ABDUCTIONS AND THE COVER-UP.", 155, 275, 27, rl.RAYWHITE)
-        rl.DrawText("The facility was sealed before dawn.", 295, 345, 23, rl.GRAY)
+        rl.DrawText("THE 2:14 AM CALL CAME FROM LEAH.", 230, 215, 30, rl.RAYWHITE)
+        rl.DrawText("She reached a maintenance radio after escaping Observation.", 175, 275, 21, rl.GOLD)
+        rl.DrawText("She called the officer already assigned to the four disappearances.", 150, 335, 19, rl.GRAY)
     case 4:
+        rl.DrawText("THE CEMETERY HID A CIVIL-DEFENSE SIGNAL ANNEX.", 130, 210, 26, rl.RAYWHITE)
+        rl.DrawText("Vale repurposed its isolated tunnels for Project Resonance.", 180, 270, 21, rl.LIGHTGRAY)
+        rl.DrawText("The tri-band scanner was its maintenance and containment tool.", 165, 330, 20, rl.SKYBLUE)
+    case 5:
+        rl.DrawText("DR. ADRIAN VALE WAS ARRESTED BEFORE DAWN.", 165, 215, 28, rl.RAYWHITE)
+        rl.DrawText("His records linked him to the abductions and the cover-up.", 185, 275, 21, rl.LIGHTGRAY)
+        rl.DrawText("The facility was seized and sealed by state investigators.", 195, 335, 20, rl.GRAY)
+    case 6:
         rl.DrawText("CASE CLOSED", 385, 215, 44, rl.RAYWHITE)
         rl.DrawText("SIGNAL RUNNER: BLACKOUT", 320, 285, 30, rl.RED)
         rl.DrawText("The signal finally went quiet.", 360, 355, 21, rl.GRAY)
@@ -234,6 +243,7 @@ draw_hud :: proc(game: ^Game) {
     draw_current_objective_panel(game)
     draw_minimap(game)
     draw_equipped_item_hud(game)
+    draw_balance_status(game)
 
     if game.room == .ENTRANCE {
         rl.DrawText("1 RED SIGNAL  |  E INTERACT  |  I INVESTIGATION LOG  |  TAB INVENTORY", 18, 586, 14, rl.LIGHTGRAY)
@@ -245,6 +255,21 @@ draw_hud :: proc(game: ^Game) {
     if game.player_hidden {
         rl.DrawText("HIDDEN", 930, 586, 15, rl.SKYBLUE)
     }
+}
+
+
+draw_balance_status :: proc(game: ^Game) {
+    // Compact CP5 demo status in the top status bar. It exposes loaded external
+    // tuning data without changing gameplay.
+    profile := tuning_profile_name(game.tuning.profile_id)
+    stage := balance_stage_name(balance_stage_for_room(game.room))
+
+    rl.DrawRectangle(300, 8, 278, 52, rl.Color{8, 8, 9, 220})
+    rl.DrawRectangleLines(300, 8, 278, 52, rl.Color{72, 67, 57, 255})
+    rl.DrawText("CP5 BALANCE", 312, 16, 10, rl.GOLD)
+    rl.DrawText(profile, 402, 16, 10, rl.RAYWHITE)
+    rl.DrawText(stage, 462, 16, 10, rl.LIGHTGRAY)
+    rl.DrawText("F5 RELOAD  |  F9 CSV", 312, 39, 9, rl.DARKGRAY)
 }
 
 draw_lives :: proc(game: ^Game) {
@@ -721,23 +746,23 @@ draw_message :: proc(game: ^Game) {
         rl.DrawText("The four missing people are standing at the cemetery gate.", x, 493, 16, rl.LIGHTGRAY)
     case 73: rl.DrawText("The photograph is already in my evidence bag.", x, 476, 17, rl.GRAY)
     case 74:
-        rl.DrawText("RECEPTION MEMO: Visitor gate unmanned after 23:00.", x, 458, 17, rl.BEIGE)
-        rl.DrawText("'C-17 transfer suspended until Relay 3 is stable.'", x, 493, 16, rl.GRAY)
+        rl.DrawText("RECEPTION MEMO: Annex built under St. Mercy Cemetery", x, 458, 16, rl.BEIGE)
+        rl.DrawText("for RF isolation; old service tunnels conceal the access route.", x, 493, 15, rl.GRAY)
     case 75:
-        rl.DrawText("ARCHIVE ADDENDUM: Vale added four civilian names", x, 458, 17, rl.BEIGE)
-        rl.DrawText("without notifying local police.", x, 493, 17, rl.GRAY)
+        rl.DrawText("ARCHIVE ADDENDUM: Park, Ruiz, Cole and Morrison", x, 458, 17, rl.BEIGE)
+        rl.DrawText("were detained after documenting the reopened annex.", x, 493, 16, rl.GRAY)
     case 76:
-        rl.DrawText("LAB NOTE: C-17 reacts violently to carrier noise.", x, 458, 17, rl.BEIGE)
-        rl.DrawText("'Do not pulse the scanner while containment is open.'", x, 493, 16, rl.GRAY)
+        rl.DrawText("LAB NOTE: Voss received the prototype resonance matrix", x, 458, 16, rl.BEIGE)
+        rl.DrawText("after the accident. C-17 still reacts to carrier noise.", x, 493, 16, rl.GRAY)
     case 77:
-        rl.DrawText("DETENTION LOG: Cell 04 refused to identify the leak.", x, 458, 17, rl.BEIGE)
-        rl.DrawText("Maintenance badge confiscated with personal effects.", x, 493, 16, rl.GRAY)
+        rl.DrawText("DETENTION LOG: Morrison hid a maintenance radio", x, 458, 17, rl.BEIGE)
+        rl.DrawText("before transfer to Observation. Badge confiscated separately.", x, 493, 15, rl.GRAY)
     case 78:
         rl.DrawText("MAINTENANCE CARD: Relay 3 requires RED carrier", x, 458, 17, rl.BEIGE)
         rl.DrawText("after the panel is physically opened.", x, 493, 17, rl.GRAY)
     case 79:
-        rl.DrawText("STORAGE TAG: Four personal-effects bags arrived together.", x, 458, 16, rl.BEIGE)
-        rl.DrawText("One was returned to Detention Cell 04.", x, 493, 17, rl.GRAY)
+        rl.DrawText("STORAGE TAG: Four civilians entered through the cemetery", x, 458, 16, rl.BEIGE)
+        rl.DrawText("together. Their cameras and phones were bagged as evidence.", x, 493, 15, rl.GRAY)
     case 80:
         rl.DrawText("VALE: 'If the police reach the mirror, purge everything.'", x, 458, 16, rl.BEIGE)
         rl.DrawText("The purge command was never completed.", x, 493, 17, rl.GRAY)
@@ -759,5 +784,11 @@ draw_message :: proc(game: ^Game) {
     case 86:
         rl.DrawText("The router accepts RED, BLUE and YELLOW scanner signals.", x, 458, 16, rl.SKYBLUE)
         rl.DrawText("Select a colour with 1/2/3, then press E here to submit it.", x, 493, 15, rl.LIGHTGRAY)
+    case 90:
+        rl.DrawText("CP5 BALANCE PROFILE RELOADED.", x, 458, 18, rl.GREEN)
+        rl.DrawText(tuning_profile_name(game.tuning.profile_id), x, 493, 18, rl.GOLD)
+    case 91:
+        rl.DrawText("CP5 TELEMETRY SNAPSHOT SAVED.", x, 458, 18, rl.SKYBLUE)
+        rl.DrawText("See telemetry/latest_before.csv or latest_after.csv.", x, 493, 15, rl.LIGHTGRAY)
     }
 }

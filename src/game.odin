@@ -3,7 +3,7 @@ package main
 import rl "vendor:raylib"
 
 STORY_COUNT  :: 7
-ENDING_COUNT :: 5
+ENDING_COUNT :: 7
 
 Game :: struct {
     state: Game_State,
@@ -116,6 +116,10 @@ Game :: struct {
 
     // Enemy AI.
     enemy: Enemy_AI,
+
+    // CP5 balancing telemetry. Instrumentation is observational only and does not
+    // change normal gameplay rules.
+    telemetry: Telemetry,
 
     // Shared dialogue/message system.
     message_timer: f32,
@@ -233,6 +237,7 @@ reset_progress :: proc(game: ^Game) {
     game.message_timer = 0
     game.message_kind = 0
     game.ambient_event_timer = random_ambient_delay(game)
+    telemetry_reset(game)
 
     load_level_file(game, room_path(.ENTRANCE), .ENTRANCE)
     game.enemy = Enemy_AI{state=.DORMANT, active=false, room=.ENTRANCE}
@@ -298,6 +303,7 @@ begin_jumpscare :: proc(game: ^Game) {
         return
     }
 
+    telemetry_record_capture(game)
     game.state = .JUMPSCARE
     game.jumpscare_timer = 0
     stop_enemy_audio(game)
@@ -316,6 +322,7 @@ resolve_player_capture :: proc(game: ^Game) {
         game.lives = 0
         game.state = .GAME_OVER
         stop_enemy_audio(game)
+        _ = write_telemetry_snapshot(game)
         return
     }
 
@@ -547,6 +554,28 @@ update_playing :: proc(game: ^Game, dt: f32) {
         game.hint_notification_timer = 0
     }
 
+    // CP5 live tuning demonstration: edit/copy data/tuning_active.json and press
+    // F5. No recompilation is required.
+    if rl.IsKeyPressed(.F5) {
+        old_profile := game.tuning.profile_id
+        game.tuning = load_tuning("data/tuning_active.json")
+        rl.SetMusicVolume(game.resources.ambience_music, game.tuning.ambient_volume)
+        rl.SetMusicVolume(game.resources.chase_music, game.tuning.chase_volume)
+        if old_profile != game.tuning.profile_id {
+            telemetry_reset(game)
+        } else {
+            game.telemetry.enabled = game.tuning.telemetry_enabled
+        }
+        show_message(game, 90)
+    }
+
+    // F9 writes an observational CP5 snapshot; it does not alter gameplay.
+    if rl.IsKeyPressed(.F9) {
+        if write_telemetry_snapshot(game) {
+            show_message(game, 91)
+        }
+    }
+
     if game.message_timer > 0 { game.message_timer -= dt }
     if game.scanner_pulse_timer > 0 { game.scanner_pulse_timer -= dt }
     if game.respawn_protection > 0 { game.respawn_protection -= dt }
@@ -558,6 +587,7 @@ update_playing :: proc(game: ^Game, dt: f32) {
         if game.reception_power_transition > 1.0 { game.reception_power_transition = 1.0 }
     }
 
+    telemetry_update(game, dt)
     update_ambient_events(game, dt)
 
     if game.inventory_open {

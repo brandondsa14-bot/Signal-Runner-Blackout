@@ -152,6 +152,7 @@ update_hint_system :: proc(game: ^Game, dt: f32) {
         if game.hint_elapsed[index] >= game.tuning.hint_interval_seconds {
             game.hint_elapsed[index] = 0
             game.hint_stage[index] += 1
+            telemetry_record_hint(game)
             game.hint_notification_context = ctx
             game.hint_notification_stage = game.hint_stage[index]
             game.hint_notification_timer = game.tuning.hint_notification_seconds

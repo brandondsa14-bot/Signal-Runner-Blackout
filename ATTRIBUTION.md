@@ -281,3 +281,48 @@ ChatGPT / OpenAI assisted with the reusable hint architecture, contextual progre
 - No external source URL, licence, creator, or permission status is invented when it was not supplied or independently verified.
 - `README.md`, `docs/implementation-summary.md`, and `docs/testing-summary.md` describe the current controls, architecture and verification status.
 - A source-level/static review is not the same as a successful runtime test. The latest build should be verified with `odin check src` and `odin run src` on the project author's macOS Odin/Raylib setup before final submission.
+
+# CP5 — Balancing, Narrative Integration, and Telemetry
+
+## Original implementation for Signal Runner: Blackout
+
+The following CP5 work was implemented specifically for this project and is not copied from another game's source code:
+
+- External **BEFORE / AFTER / ACTIVE** balancing profiles in `data/tuning_before.json`, `data/tuning_after.json`, and `data/tuning_active.json`.
+- Centralized tuning validation/clamping in `src/data.odin`.
+- Five-stage room difficulty curve and effective monster-pressure helpers in `src/balance.odin`.
+- Runtime external-profile reload (`F5`) without editing/recompiling Odin source.
+- CP5 observational telemetry in `src/telemetry.odin`, including room/objective time, wrong puzzle attempts, hints, encounters, escapes, captures, chase duration, and checkpoint retries.
+- Telemetry CSV snapshot export (`F9`) for reproducible BEFORE/AFTER evidence gathering.
+- CP5 HUD status showing active balance profile and current difficulty stage.
+- Updated Clay Stalker tuning integration so patrol/chase speed, detection/hearing radius, reaction timing, search timing, cross-room pursuit delay, and respawn pacing continue to come from external data.
+- Narrative consolidation for Project Resonance, the four missing civilians, Subject C-17/Elias Voss, Dr. Adrian Vale, the 2:14 AM call, and the concealed communications annex beneath St. Mercy Cemetery.
+- Expanded short environmental clues and final ending pages using the existing dialogue/rendering systems.
+- CP5 baseline, balancing report, playtest protocol, telemetry documentation, demonstration script, and narrative bible.
+
+No new third-party art, music, sound effects, fonts, or code libraries were introduced specifically for this CP5 balancing/narrative pass. Existing asset attribution entries elsewhere in this file remain applicable.
+
+## Balancing inspiration / course concepts
+
+The CP5 balancing work follows the course concepts of difficulty curves, pacing, external tuning tables, evidence-driven balancing, and retuning without recompilation. The resulting numeric curve and telemetry implementation are original to Signal Runner: Blackout.
+
+Survival-horror games including *Ao Oni* remain high-level design references for pursuit tension, breathing-room pacing, and environmental investigation. They did **not** provide source code, level files, sprites, audio, tuning values, or other implementation assets used by this project.
+
+## AI assistance disclosure — CP5
+
+OpenAI ChatGPT assisted with:
+
+- auditing the existing tuning/data architecture;
+- proposing and implementing the CP5 before/after profile structure;
+- generating/refining Odin code for centralized balance scaling, configuration validation, profile reload, and telemetry instrumentation;
+- identifying a deliberately shaped five-stage candidate difficulty curve;
+- calculating configuration-derived chase/player-speed ratios and effective per-stage tuning values;
+- reorganizing Project Resonance narrative details into one consistent mystery and drafting short environmental-story text;
+- drafting the CP5 baseline assessment, balancing report, demonstration script, playtest protocol, narrative bible, and documentation updates;
+- static source review and debugging assistance.
+
+AI assistance did **not** generate or fabricate human playtest results. Any CP5 human evidence must come from actual gameplay runs recorded by the project author/testers. Configuration-derived ratios are identified as engineering evidence rather than human playtest evidence.
+
+## Verification / attribution integrity note
+
+The CP5 code and documentation distinguish source/static verification from actual runtime or human-playtest verification. Do not cite empty telemetry templates as completed playtest evidence. Third-party asset authors, URLs, and licences remain exactly as documented in the pre-existing attribution sections; no unverified external attribution details were invented during this pass.

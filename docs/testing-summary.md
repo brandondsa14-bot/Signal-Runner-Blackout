@@ -195,3 +195,61 @@ Manual runtime verification still required on macOS:
 6. Confirm correct sequence feedback increments 1/4 -> 2/4 -> 3/4 and wrong input resets to 0/4.
 7. Confirm laser shutdown animation and opened east route after success.
 8. For rapid testing only, temporarily reduce `hint_interval_seconds` in `data/tuning.json`, then verify all four hint stages, `H` assistance, and `K` toggle before restoring the value to 60.0.
+
+## Final documentation-integrity verification
+
+The final documentation pass checked that:
+
+- README control descriptions match the current source-level key bindings for `E`, `Tab`, `I`, `H`, `K`, `V`, scanner `1/2/3`, `F`, menu navigation and modal exit behaviour.
+- README configuration names match fields present in `data/tuning.json`.
+- Attribution retains the pre-existing Danganronpa ambience and Puppet Combo pickup-sound disclosures while explicitly marking unknown source URLs/licences as requiring confirmation.
+- Project-created audio/visual assets are separated from third-party/user-provided assets.
+- Ao Oni and other cited games are identified as design inspirations only, not code/asset sources.
+- AI assistance is disclosed for architecture, code generation/debugging, design iteration, documentation and AI-assisted original asset work.
+
+### Latest-build runtime status
+
+A prior build of the project was shown launching successfully under Raylib 6.0 on an Apple M4 macOS system, but that run occurred before all later hint/documentation patches were merged. The latest integrated build therefore still requires a fresh:
+
+```bash
+odin check src
+odin run src
+```
+
+Do not mark the final integrated build as runtime-verified until those commands complete successfully and the manual gameplay checklist is exercised.
+
+# CP5 balancing verification addendum
+
+## Static/source checks completed
+
+- BEFORE, AFTER, and ACTIVE tuning JSON files use the same tuning schema.
+- BEFORE preserves the pre-CP5 gameplay values and stage scales of `1.0`.
+- AFTER defines a five-stage curve (`0.75 / 0.88 / 1.00 / 1.12 / 1.06`).
+- Runtime code reads `data/tuning_active.json`; CP3 legacy `data/tuning.json` is not required for active balancing.
+- Tuning values are sanitized/clamped after JSON parsing.
+- Stage-aware monster helpers are centralized in `src/balance.odin`.
+- Telemetry calls are observational and do not grant health, alter puzzle rules, move entities, or change AI state transitions.
+- The baseline and AFTER profiles use identical room/puzzle/story content.
+
+## Required Mac runtime verification
+
+Before committing the CP5 build, run:
+
+```bash
+odin check src
+odin run src
+```
+
+Then verify:
+
+1. The console reports `AFTER` when `data/tuning_active.json` contains the AFTER profile.
+2. Copy BEFORE over ACTIVE and press `F5`; HUD/console switch to BEFORE without recompilation.
+3. Copy AFTER over ACTIVE and press `F5`; HUD/console switch back to AFTER.
+4. F9 creates the expected CSV in `telemetry/`.
+5. Complete the same Security -> Laboratory -> Detention -> Maintenance -> Containment route under both profiles.
+6. Preserve the generated CSVs; do not overwrite the only copy of a run.
+7. Confirm existing cemetery, inventory, scanner, hint, monster, lives, jumpscare, objective, minimap, and ending systems still function.
+
+## Human-evidence status
+
+No human playtest metrics are pre-filled. The `telemetry/CP5_RESULTS_TEMPLATE.csv` file is intentionally blank. Populate the CP5 report only with actual measurements gathered from gameplay.

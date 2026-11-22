@@ -376,3 +376,19 @@ Different rooms use the scanner differently so it does not become a repeated sin
 ### Clay Stalker
 
 The Clay Stalker is linked to Project Resonance as Subject C-17. It uses an explicit state machine, line-of-sight detection, authored waypoint navigation, steering, searching, disengagement, environmental sound attraction, hiding interactions, and cross-room pursuit between unsafe rooms.
+
+---
+
+## CP5 Balancing Addendum — Difficulty Curve
+
+The locked core scope remains unchanged. CP5 tunes existing systems rather than adding a new core mechanic.
+
+Difficulty is shaped across five progression stages using external data:
+
+1. **Introduction — Entrance / Reception:** investigation and interaction learning with minimal pursuit pressure.
+2. **Investigation — Security / Archive / Laboratory:** scanner and multi-step puzzle use with moderate threat escalation.
+3. **Rising Danger — Detention / Maintenance / Storage:** combined item/puzzle dependencies and stronger pursuit pressure.
+4. **Peak Tension — Containment:** highest monster pressure while the player applies learned scanner/survival rules.
+5. **Resolution — Final Investigation:** slight pressure reduction so evidence synthesis and story resolution remain readable.
+
+The BEFORE profile uses flat `1.0` stage scaling. The AFTER candidate curve is `0.75 -> 0.88 -> 1.00 -> 1.12 -> 1.06`. Both profiles are external JSON and retain identical gameplay content/rules.

@@ -26,8 +26,8 @@ room_allows_monster :: proc(room: Room_ID) -> bool {
 }
 
 random_respawn_delay :: proc(game: ^Game) -> f32 {
-    lo := i32(game.tuning.monster_respawn_min * 10)
-    hi := i32(game.tuning.monster_respawn_max * 10)
+    lo := i32(monster_respawn_min_for_room(game) * 10)
+    hi := i32(monster_respawn_max_for_room(game) * 10)
     if hi < lo {
         hi = lo
     }
@@ -39,6 +39,8 @@ enemy_set_state :: proc(game: ^Game, state: Enemy_State) {
         return
     }
 
+    old_state := game.enemy.state
+    telemetry_record_enemy_transition(game, old_state, state)
     game.enemy.state = state
     game.enemy.state_timer = 0
     game.enemy.lose_timer = 0
@@ -188,7 +190,7 @@ enemy_on_room_change :: proc(game: ^Game, pursuit_carried: bool, entry_hint: rl.
         // Cross-room chase: the player gets a short fair head start before the monster enters.
         game.enemy.state = .ALERT
         game.enemy.cross_room_pending = true
-        game.enemy.cross_room_timer = game.tuning.monster_cross_room_delay
+        game.enemy.cross_room_timer = monster_cross_room_delay_for_room(game)
         return
     }
 
@@ -214,7 +216,7 @@ spawn_enemy_from_door :: proc(game: ^Game) {
     game.enemy.room = game.room
     game.enemy.cross_room_pending = false
     enemy_set_state(game, .ALERT)
-    game.enemy.state_timer = game.tuning.monster_alert_seconds
+    game.enemy.state_timer = monster_alert_seconds_for_room(game)
 }
 
 enemy_rect :: proc(game: ^Game) -> rl.Rectangle {
@@ -268,7 +270,7 @@ enemy_can_see_player :: proc(game: ^Game) -> bool {
         return false
     }
     player := &game.entities[game.player_index]
-    max_d := game.tuning.monster_detection_range
+    max_d := monster_detection_range_for_room(game)
     if distance_sq(game.enemy.position, player.position) > max_d*max_d {
         return false
     }
@@ -352,6 +354,15 @@ enemy_attract_to :: proc(game: ^Game, position: rl.Vector2, strong: bool) {
         return
     }
 
+    // Active monsters only react to sound inside their externally tuned hearing
+    // radius. Scripted strong events may still spawn a dormant monster nearby.
+    if game.enemy.active {
+        hearing := monster_hearing_range_for_room(game)
+        if distance_sq(game.enemy.position, position) > hearing*hearing {
+            return
+        }
+    }
+
     if !game.enemy.active {
         if strong {
             game.enemy.position = choose_random_marker(game, .MONSTER_SPAWN, true)
@@ -360,7 +371,7 @@ enemy_attract_to :: proc(game: ^Game, position: rl.Vector2, strong: bool) {
             game.enemy.last_seen = position
             game.enemy.forced_event = true
             enemy_set_state(game, .ALERT)
-            game.enemy.state_timer = game.tuning.monster_alert_seconds * 1.25
+            game.enemy.state_timer = monster_alert_seconds_for_room(game) * 1.25
         }
         return
     }
@@ -368,7 +379,7 @@ enemy_attract_to :: proc(game: ^Game, position: rl.Vector2, strong: bool) {
     if game.enemy.state != .CHASE {
         game.enemy.last_seen = position
         enemy_set_state(game, .SEARCH)
-        game.enemy.state_timer = game.tuning.monster_search_seconds
+        game.enemy.state_timer = monster_search_seconds_for_room(game)
     }
 }
 
@@ -413,14 +424,14 @@ update_enemy_ai :: proc(game: ^Game, dt: f32) {
         if enemy_can_see_player(game) {
             game.enemy.last_seen = player.position
             enemy_set_state(game, .ALERT)
-            game.enemy.state_timer = game.tuning.monster_alert_seconds
+            game.enemy.state_timer = monster_alert_seconds_for_room(game)
             return
         }
 
         if distance_sq(game.enemy.position, game.enemy.patrol_target) < 30*30 {
             game.enemy.patrol_target = choose_random_marker(game, .MONSTER_SPAWN, false)
         }
-        velocity := enemy_velocity_to_target(game, game.enemy.patrol_target, game.tuning.monster_patrol_speed)
+        velocity := enemy_velocity_to_target(game, game.enemy.patrol_target, monster_patrol_speed_for_room(game))
         game.enemy.velocity = velocity
         enemy_move_with_collision(game, velocity, dt)
 
@@ -445,44 +456,44 @@ update_enemy_ai :: proc(game: ^Game, dt: f32) {
             game.enemy.lose_timer += dt
         }
 
-        velocity := enemy_velocity_to_target(game, game.enemy.last_seen, game.tuning.monster_chase_speed)
+        velocity := enemy_velocity_to_target(game, game.enemy.last_seen, monster_chase_speed_for_room(game))
         game.enemy.velocity = velocity
         enemy_move_with_collision(game, velocity, dt)
 
-        if game.enemy.lose_timer >= game.tuning.monster_lost_seconds {
+        if game.enemy.lose_timer >= monster_lost_seconds_for_room(game) {
             enemy_set_state(game, .SEARCH)
-            game.enemy.state_timer = game.tuning.monster_search_seconds
+            game.enemy.state_timer = monster_search_seconds_for_room(game)
         }
 
     case .SEARCH:
         if enemy_can_see_player(game) {
             game.enemy.last_seen = player.position
             enemy_set_state(game, .ALERT)
-            game.enemy.state_timer = game.tuning.monster_alert_seconds * 0.65
+            game.enemy.state_timer = monster_alert_seconds_for_room(game) * 0.65
             return
         }
 
         game.enemy.state_timer -= dt
-        velocity := enemy_velocity_to_target(game, game.enemy.last_seen, game.tuning.monster_patrol_speed * 1.15)
+        velocity := enemy_velocity_to_target(game, game.enemy.last_seen, monster_patrol_speed_for_room(game) * 1.15)
         game.enemy.velocity = velocity
         enemy_move_with_collision(game, velocity, dt)
 
         if game.enemy.state_timer <= 0 {
             game.enemy.patrol_target = choose_random_marker(game, .MONSTER_SPAWN, false)
             enemy_set_state(game, .DISENGAGE)
-            game.enemy.state_timer = game.tuning.monster_disengage_seconds
+            game.enemy.state_timer = monster_disengage_seconds_for_room(game)
         }
 
     case .DISENGAGE:
         if enemy_can_see_player(game) {
             game.enemy.last_seen = player.position
             enemy_set_state(game, .ALERT)
-            game.enemy.state_timer = game.tuning.monster_alert_seconds
+            game.enemy.state_timer = monster_alert_seconds_for_room(game)
             return
         }
 
         game.enemy.state_timer -= dt
-        velocity := enemy_velocity_to_target(game, game.enemy.patrol_target, game.tuning.monster_patrol_speed)
+        velocity := enemy_velocity_to_target(game, game.enemy.patrol_target, monster_patrol_speed_for_room(game))
         game.enemy.velocity = velocity
         enemy_move_with_collision(game, velocity, dt)
 

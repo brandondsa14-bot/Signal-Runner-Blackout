@@ -143,6 +143,7 @@ calibrate_security_sequence :: proc(game: ^Game, entity: ^Entity) {
         }
     } else {
         game.security_sequence_step = 0
+        telemetry_record_wrong_submission(game)
         show_message(game, 25)
         rl.PlaySound(game.resources.scanner_fail)
         enemy_attract_to(game, entity.position, true)
@@ -182,6 +183,7 @@ calibrate_lab_receiver :: proc(game: ^Game, kind: Entity_Kind) {
         rl.PlaySound(game.resources.scanner_success)
         show_message(game, 31)
     } else {
+        telemetry_record_wrong_submission(game)
         rl.PlaySound(game.resources.scanner_fail)
         show_message(game, 32)
         enemy_attract_to(game, game.entities[game.player_index].position, false)
@@ -229,6 +231,7 @@ calibrate_containment_node :: proc(game: ^Game, kind: Entity_Kind) {
         enemy_force_containment_event(game)
         enemy_attract_to(game, game.entities[game.player_index].position, true)
     } else {
+        telemetry_record_wrong_submission(game)
         show_message(game, 43)
         rl.PlaySound(game.resources.scanner_fail)
         enemy_attract_to(game, game.entities[game.player_index].position, true)
@@ -270,6 +273,7 @@ handle_scanner_pulse :: proc(game: ^Game) {
                     show_message(game, 58)
                 }
             } else {
+                telemetry_record_wrong_submission(game)
                 show_message(game, 29)
                 rl.PlaySound(game.resources.scanner_fail)
             }
@@ -281,6 +285,7 @@ handle_scanner_pulse :: proc(game: ^Game) {
                 show_message(game, 34)
                 rl.PlaySound(game.resources.scanner_success)
             } else {
+                telemetry_record_wrong_submission(game)
                 show_message(game, 35)
                 rl.PlaySound(game.resources.scanner_fail)
             }
@@ -299,6 +304,7 @@ handle_scanner_pulse :: proc(game: ^Game) {
                     show_message(game, 59)
                 }
             } else {
+                telemetry_record_wrong_submission(game)
                 show_message(game, 43)
                 rl.PlaySound(game.resources.scanner_fail)
             }
@@ -309,6 +315,7 @@ handle_scanner_pulse :: proc(game: ^Game) {
                 show_message(game, 46)
                 rl.PlaySound(game.resources.scanner_fail)
             } else if game.scanner_mode != .BLUE {
+                telemetry_record_wrong_submission(game)
                 show_message(game, 47)
                 rl.PlaySound(game.resources.scanner_fail)
             } else {
@@ -491,6 +498,7 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
     case .FINAL_TERMINAL:
         if game.final_decrypted && has_required_final_evidence(game) {
             game.case_transmitted = true
+            _ = write_telemetry_snapshot(game)
             game.ending_page = 0
             game.state = .ENDING
             stop_enemy_audio(game)

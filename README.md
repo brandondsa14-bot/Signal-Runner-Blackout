@@ -1,23 +1,24 @@
 # Signal Runner: Blackout
 
-A top-down survival-horror puzzle adventure built with **Odin + Raylib**.
+A top-down survival-horror investigation and puzzle adventure built with **Odin + Raylib**.
 
-The player is a Marshall, Nebraska police officer investigating four disappearances. The investigation begins at an abandoned cemetery and descends into a hidden research facility containing security systems, records, medical laboratories, detention cells, maintenance infrastructure, containment chambers, and evidence connected to **Project Resonance**.
+The player is a Marshall, Nebraska police officer investigating four disappearances. The investigation begins at an abandoned cemetery and descends into a hidden research facility containing security systems, records, laboratories, detention cells, maintenance infrastructure, containment chambers, environmental evidence, and the mystery of **Project Resonance**.
 
 ## Current Build
 
-This build preserves the CP1–CP4 foundations and expands the game into a connected survival-horror progression:
+The current project preserves the earlier checkpoint architecture while expanding the game into a connected survival-horror investigation:
 
-- CP1/CP2: GDD, entity architecture, explicit game states, update/render split.
-- CP3: resources loaded once at boot, external tuning values, external level/spawn data, attribution.
-- CP4: explicit monster finite-state machine and deliberate AI movement.
-- Expanded build: scanner puzzles, inventory, evidence progression, interconnected facility rooms, cross-room pursuit, hiding/distraction, three lives, checkpoints, jumpscare, Game Over, a definite ending, a live objective tracker, Investigation Log, and a room minimap.
+- **CP1 / CP2** — GDD, entity-as-data architecture, explicit game states, update/render split.
+- **CP3** — shared resources loaded once at boot, external tuning values, external level/spawn data, attribution.
+- **CP4** — explicit Clay Stalker finite-state machine, deliberate AI movement and movement-method justification.
+- **Expanded systems** — interconnected facility progression, scanner puzzles, searchable containers, stable-ID inventory, contextual item use, evidence progression, cross-room pursuit, hiding/distraction, three lives, checkpoints, jumpscare, Game Over, objective tracker, Investigation Log, minimap, progressive hints, persistent Reception lighting, procedural walking animation and a definite ending.
 
 ## Build and Run
 
 From the repository root:
 
 ```bash
+odin check src
 odin run src
 ```
 
@@ -25,55 +26,176 @@ Run from the project root so `assets/` and `data/` resolve correctly.
 
 ## Controls
 
+### Normal gameplay
+
 - `WASD` / Arrow Keys — move; officer faces the movement direction.
-- `E` — interact / search / confirm pickup or contextual item use / calibrate a selected frequency.
+- `E` — interact / examine / search / confirm / submit the current scanner frequency where applicable.
 - `1` / `2` / `3` — select RED / BLUE / YELLOW scanner frequency underground.
 - `F` — emit scanner pulse.
-- `I` — open/close the Investigation Log during normal play; while a search/item-use modal is open, `I` exits that interaction.
-- `Tab` — open/close field inventory; equip the highlighted item with `E` or click.
+- `Tab` — open or close the Field Inventory.
+- `I` — open or close the Investigation Log during normal play.
 - `H` — open step-by-step assistance once the progressive hint system offers it.
 - `K` — toggle automatic progressive hints on/off.
 - `V` — toggle reduced horror effects.
-- Mouse wheel / Arrow keys / `WASD` — navigate active search/inventory/item-selection menus.
-- Left click — select an inventory or contextual item-use entry.
-- `Esc` — close an active modal; otherwise return to title during gameplay.
-- `R` — restart investigation from Game Over.
-- `Enter` — advance story/ending or return to menu from Game Over.
+- `Esc` — close the active modal; otherwise return toward the title/menu flow where supported.
 
 At the cemetery surface, `1` retains the earlier Red-signal barrier mechanic.
+
+### Search / inventory / contextual item menus
+
+- Mouse wheel — move through available objects or inventory entries.
+- Arrow Keys / `WASD` — keyboard menu navigation.
+- Left click — select the highlighted entry where mouse selection is supported.
+- `E` / Enter — inspect, pick up, equip, or confirm the selected action.
+- `I` — exit a searchable-container or contextual item-use interface.
+- `Esc` — exit the current modal interface.
+- `Tab` — closes the Field Inventory when it is open.
+
+Only one modal interface is intended to be active at a time. Normal movement and hint timing pause while the relevant modal UI is open.
+
+## Searchable Containers
+
+Environmental searching is part of the investigation rather than an automatic pickup system.
+
+- Approach a searchable drawer/cabinet/container and press `E`.
+- A dark Investigation Search interface opens and normal gameplay pauses.
+- Scroll through individual objects.
+- Each object can have its own description and action state: **Pick Up**, **Inspect**, or **Leave**.
+- Collectable objects are added to persistent inventory state.
+- Inspect-only objects remain environmental evidence/flavour.
+- Collected objects disappear from that container and cannot be duplicated by leaving/re-entering the room.
+- `I` or `Esc` leaves the search interface.
+
+Examples currently include Reception, Archive, Maintenance and Storage interactions.
+
+## Field Inventory
+
+Press `Tab` during gameplay to open the Field Inventory.
+
+Inventory entries use stable item identifiers rather than display-name comparisons. Each item can provide:
+
+- name;
+- procedural icon / slot presentation;
+- description;
+- gameplay use;
+- item class (consumable, reusable, evidence or tool);
+- persistent collected state.
+
+The selected inventory item is highlighted and can also be represented on the main HUD.
+
+### Item behaviour
+
+- **Consumables** — removed only after a successful compatible use (for example the 20A Reception fuse).
+- **Reusable items** — remain after use (for example badges, keys or tools where appropriate).
+- **Evidence** — remains available for inspection/progression.
+- **Incorrect item choices** — never consume the item and do not unlock the target.
+
+## Contextual Item Use
+
+Some locked/powered interactions require the player to deliberately choose an inventory item.
+
+Typical flow:
+
+1. Approach the target and press `E`.
+2. The officer examines the object.
+3. A contextual item selector opens when an item is required.
+4. Navigate the inventory and choose an item.
+5. A wrong item produces feedback and remains in inventory.
+6. A correct item updates the persistent puzzle/door/power state.
+
+Implemented examples include Reception power restoration, badge/key access and Maintenance tool use. Ordinary interactions that do not need an item continue to use `E` normally.
+
+## Underground Reception Power / Fuse Puzzle
+
+Reception begins under dim emergency lighting but remains navigable.
+
+1. Investigate Reception and nearby searchable objects.
+2. Find the visible **20A Ceramic Fuse** world pickup.
+3. Collect it into the Field Inventory.
+4. Approach the Reception power panel and press `E`.
+5. Select the 20A fuse from the contextual item selector.
+6. Successful installation consumes the fuse, plays the electrical activation cue, flickers the room lights and raises the room brightness.
+7. Reception power remains restored after leaving/re-entering and the objective stays completed.
+
+The world-darkness pass is rendered separately from HUD/dialogue/modal UI so menus remain readable.
+
+## Police Officer Walking Animation
+
+The existing one-frame police sprite is preserved. Movement adds a subtle procedural four-direction leg/boot cycle so the character no longer appears completely static while walking. The animation stops when movement stops and can cycle faster during pursuit without changing the player's collision dimensions.
+
+## Frequency Scanner
+
+The scanner is a recurring investigation/puzzle tool rather than a one-room switch.
+
+- **RED** — high-energy relay / containment calibration.
+- **BLUE** — hidden evidence detection and encrypted evidence decryption.
+- **YELLOW** — security confirmation and electronic lock bypass.
+
+Select a frequency with `1`, `2`, or `3`. Use `F` for a scanner pulse where the puzzle expects scanning. Some devices, such as the Security Frequency Router, accept the currently selected frequency with `E` while the officer is positioned at the device.
+
+Scanner actions can generate noise and puzzle failures can create risk.
+
+## Security Control Puzzle
+
+Security Control is intentionally a puzzle, but its controls and feedback are made explicit.
+
+- Read the **Shift Note** for the actual clue.
+- Inspect the Frequency Router once to learn how its input works.
+- Select RED / BLUE / YELLOW with `1` / `2` / `3`.
+- Press `E` at the router to submit the selected frequency.
+- Correct entries report accepted progress.
+- A wrong frequency clearly reports that the sequence reset.
+- Completing the sequence visibly shuts down the security laser barrier and advances the objective.
+
+The router screen does not simply display the full solution before the clue is investigated.
+
+## Progressive Hint System
+
+The hint system tracks **time without meaningful forward puzzle progress**, not total room time.
+
+- The first automatic hint appears after roughly 60 seconds without progress.
+- Additional stages become progressively more specific.
+- The fourth stage offers `H` step-by-step assistance.
+- `K` toggles automatic hints for players who prefer no assistance.
+- Hint timers pause during dialogue, Inventory, Search, contextual item selection, Investigation Log, hint overlay, and Clay Stalker ALERT / CHASE / SEARCH states.
+- Meaningful puzzle progress resets the stuck timer.
+- Hint stage is stored per puzzle context, so leaving and re-entering a room does not erase the accumulated assistance state.
+- Context-aware text is derived from actual puzzle/inventory state so the game should not tell the player to repeat an already completed step.
+
+Security step-by-step assistance obtains the implemented frequency solution from the puzzle logic rather than storing a second, potentially inconsistent answer.
+
+## Objective Tracker / Investigation Log
+
+- A compact **Current Objective** panel remains visible during normal gameplay.
+- The HUD also displays a contextual **Next Step** derived from current puzzle state.
+- `I` opens the dark, aged Investigation Log during normal gameplay.
+- Completed objectives use clear completion markers; locked/undiscovered leads use `?` styling.
+- Objective completion derives from persistent game progression rather than a separate manually maintained quest list.
+
+When a searchable-container or contextual item-use modal is open, `I` exits that interaction instead of opening the Investigation Log.
+
+## Minimap
+
+The top-right minimap:
+
+- renders basic current-room geometry from the existing entity data;
+- shows the officer position;
+- records exploration/visited-room state;
+- intentionally does **not** show the Clay Stalker so it does not become enemy radar.
 
 ## Facility Progression
 
 1. **Cemetery Visitor Gate** — obtain the cemetery key and discover the hidden grave staircase.
-2. **Underground Reception** — search the room, pick up the visible floor fuse, and restore partial power.
-3. **Security Control** — read the Shift Note, learn the router controls, solve its scanner-frequency sequence, and obtain the security keycard.
-4. **Records Archive** — collect missing-person intake records and use BLUE scanning to reveal code `7-3-1`.
-5. **Medical Laboratory** — use a damaged audio log to calibrate three receivers `BLUE / RED / YELLOW`.
-6. **Detention Block D** — use YELLOW scanning plus prior evidence to bypass cell locks; recover a cell key and Cell 04 belongings/maintenance badge.
-7. **Maintenance** — find a screwdriver, open Relay Panel 3, then use RED scanning to synchronize the third facility signal.
-8. **Containment Wing C** — calibrate three containment nodes while the Clay Stalker becomes aggressive; recover the C-17 experiment log.
-9. **Final Investigation** — combine the three mandatory evidence exhibits, use BLUE to decrypt the evidence mirror, and upload the case to Marshall PD.
+2. **Underground Reception** — investigate the room, collect the visible fuse and restore facility power.
+3. **Security Control** — read the Shift Note, learn the router controls, solve the scanner-frequency sequence and obtain security access.
+4. **Records Archive** — recover missing-person evidence and use BLUE scanning to reveal the archive code.
+5. **Medical Laboratory** — use recorded evidence to calibrate receivers.
+6. **Detention Block** — combine prior evidence, lock logic and item progression to recover additional case material.
+7. **Maintenance** — use the correct tool and scanner alignment to restore the next facility system.
+8. **Containment** — complete high-pressure scanner calibration while the Clay Stalker threat increases.
+9. **Final Investigation** — combine mandatory evidence, decrypt the final record and transmit the completed case.
 
-An optional **Supply Storage** room contains additional environmental evidence and a damaged photograph.
-
-## Frequency Scanner
-
-The scanner is central to the whole underground experience rather than being a one-room switch.
-
-- **RED** — high-energy relay/containment calibration.
-- **BLUE** — hidden evidence detection and encrypted evidence decryption.
-- **YELLOW** — security confirmation and electronic lock bypass.
-
-Scanner use can generate noise. Bad puzzle inputs can attract the monster.
-
-## Investigation Log and Minimap
-
-- A compact **Current Objective** panel remains visible during gameplay.
-- `I` opens a full dark/aged Investigation Log with active, completed and undiscovered objectives.
-- Completed entries use checkmarks; locked leads remain obscured with `?` markers until discovered.
-- `Tab` now opens the field inventory so the Investigation Log can own the `I` key.
-- The top-right minimap renders current-room collision structure and the officer position while intentionally hiding the monster.
-- Room exploration marks persist through normal room changes and checkpoint respawns.
+Optional storage/exploration areas contain additional environmental evidence.
 
 ## Clay Stalker AI
 
@@ -86,78 +208,160 @@ DORMANT -> PATROL -> ALERT -> CHASE -> SEARCH -> DISENGAGE -> DORMANT
                     +----------+-- line-of-sight / sound
 ```
 
-Movement uses a deliberate hybrid:
+Movement uses authored navigation markers plus steering:
 
-- authored navigation markers for readable patrol and obstacle routing;
+- authored markers for readable patrol and obstacle routing;
 - line-of-sight checks for detection;
 - steering/seek movement for pursuit;
-- collision-aware movement around walls and large furniture;
-- cross-room pursuit when the player changes into another unsafe room;
-- safe rooms break pursuit to preserve puzzle-solving breathing room.
+- collision-aware movement around room geometry;
+- cross-room pursuit into connected unsafe rooms;
+- safe rooms that intentionally break pursuit and create puzzle-solving breathing space.
+
+See `ATTRIBUTION.md` for the CP4 movement-method justification and inspiration disclosure.
 
 ## Survival System
 
 - Exactly **3 lives**.
 - Capture enters a dedicated jumpscare state.
-- One life is deducted after the jumpscare.
-- Puzzle progress/evidence is preserved after capture.
-- Player respawns at the most recent safe checkpoint with temporary protection.
+- One life is deducted after the jumpscare sequence.
+- Puzzle/evidence/inventory progress is preserved after capture.
+- Respawn uses the most recent safe checkpoint with temporary protection.
 - Third capture produces Game Over.
-- `V` reduces chase volume, removes jumpscare shake, and suppresses intense jumpscare/ambient sound.
+- `V` reduces the intense horror treatment.
+
+## Configuration / Tuning
+
+Gameplay tuning lives in `data/tuning.json`, including:
+
+- player speed and interaction distance;
+- message duration and ambience volume;
+- scanner range / pulse timing;
+- Clay Stalker patrol/chase speeds, detection/hearing ranges and state timings;
+- cross-room pursuit delay;
+- chase volume;
+- respawn protection and jumpscare timing;
+- ambient-event timing;
+- `hint_interval_seconds` (default `60.0`);
+- `hint_notification_seconds` (default `8.0`).
+
+For rapid hint testing only, `hint_interval_seconds` can be temporarily reduced and then restored before submission.
 
 ## Data / Resource Structure
 
 ```text
 src/
-  ai.odin              monster finite-state machine and navigation
+  ai.odin              Clay Stalker finite-state machine and navigation
   data.odin            JSON/tuning/level loading
   entities.odin        entity data model
   facility_art.odin    room/environment programmer art
-  game.odin            game state/update flow and survival system
-  hints.odin           context-aware progressive hint timers and step-by-step assistance
-  main.odin            boot, resources, update/render seam
+  game.odin            game state/update flow and survival integration
+  hints.odin           context-aware progressive hints and step-by-step assistance
+  interaction_ui.odin  inventory/search/contextual-item UI
+  items.odin           stable item IDs, inventory/container state and item-use logic
+  main.odin            boot, shared resources and update/render seam
+  objectives.odin      objective states and contextual objective information
   puzzles.odin         scanner and puzzle progression
-  items.odin           stable item IDs, inventory state, searchable containers and item-use logic
-  interaction_ui.odin  inventory/search/contextual-item UI and procedural item icons
   resources.odin       load-once shared textures/audio
-  states.odin          explicit enums for game/room/scanner/enemy states
-  ui.odin              HUD, dialogue, inventory, jumpscare, Game Over, ending
+  states.odin          explicit game/room/scanner/enemy enums
+  ui.odin              HUD, dialogue, minimap, logs, jumpscare, Game Over, ending
 
 data/
   tuning.json
   levels/*.json
+
 assets/
 docs/
 ```
 
-See `docs/level-progression.md`, `docs/puzzle-dependency-map.md`, and `docs/testing-summary.md` for the detailed design and verification notes.
+## Attribution / Documentation
 
-## Interactive Search, Inventory and Power Update
+See:
 
-The investigation layer now uses stable item/container identifiers instead of treating pickups as room-specific text events.
+- `ATTRIBUTION.md` — external assets, original project work, inspirations, AI-assistance disclosure and CP4 movement justification.
+- `docs/implementation-summary.md` — feature-to-file implementation map.
+- `docs/testing-summary.md` — static checks and required runtime verification.
+- `docs/progressive-hint-system.md` — hint architecture and Security puzzle guidance.
+- `docs/search-inventory-lighting-system.md` — container/inventory/power architecture.
+- `docs/objective-minimap-system.md` — objectives and minimap implementation.
 
-- `E` near a searchable drawer/cabinet opens a modal investigation search interface.
-- Mouse wheel or `W/S` / arrow keys move through the contents; `E` inspects or collects the highlighted object; `I` or `Esc` leaves. A visible top-right exit reminder is shown on modal interactions.
-- Collected objects disappear from that container and remain collected after room transitions/checkpoint respawns.
-- `Tab` opens a slot-based field inventory with procedural item icons, selection highlighting, descriptions, item class, and an equipped-item HUD indicator.
-- Locked item-driven interactions open a contextual item selector. Wrong items remain in inventory.
-- The Reception 20A fuse is a visible world pickup on the floor and is consumed only after successful installation; staff badges, keys and tools are reusable; evidence remains inspectable.
-- Underground Reception begins under emergency lighting. Successful fuse installation plays an electrical activation cue, flickers the lighting bus, then brightens the room. The powered state persists.
-- The one-frame officer sprite now receives a subtle procedural four-direction boot/leg cycle while moving; the cycle stops when movement stops.
+## Verification Status
 
-The reusable implementation is split across `src/items.odin` (item/container definitions, persistent state helpers and modal input logic) and `src/interaction_ui.odin` (inventory/search/item-use presentation).
+Documentation distinguishes source/static review from real runtime verification.
 
+The latest integrated build should be checked from the repository root with:
 
-## Progressive Puzzle Hints
+```bash
+odin check src
+odin run src
+```
 
-The game now tracks time spent without meaningful puzzle progress rather than raw room time.
+Do not treat a source-level inspection as proof of runtime behaviour. Complete the manual checklist in `docs/testing-summary.md` before final submission, especially after applying a new patch.
 
-- Automatic hints begin after roughly 60 seconds without forward progress and become more specific in four stages.
-- Hint timers pause during dialogue, inventory/search/item-use menus, Investigation Log, hint assistance, and Clay Stalker ALERT/CHASE/SEARCH states.
-- Progress such as reading the Security Shift Note, inspecting the Frequency Router, entering accepted frequencies, solving a receiver, or advancing a major item puzzle resets the stuck timer.
-- Hint progress is stored per facility context, so leaving and re-entering a room does not erase the accumulated hint stage.
-- At the fourth stage, `H` opens step-by-step help. In Security Control, the displayed sequence is read from the implemented `security_expected_mode()` puzzle logic.
-- `K` toggles automatic hints for players who prefer no assistance.
-- The Current Objective HUD now includes a contextual **Next Step** line derived from actual puzzle state.
+## CP5 — Data-Driven Balancing
 
-Security Control specifically records whether the Shift Note was read, whether the router instructions were inspected, how many inputs were accepted, and whether the lock is disabled. Wrong frequencies clearly reset the router to `0/4`; accepted frequencies report progress; the laser grid animates down on completion.
+The CP5 build preserves the CP3 external-data pipeline and adds explicit before/after balance profiles:
+
+- `data/tuning_before.json` — exact pre-CP5 numeric baseline.
+- `data/tuning_after.json` — deliberately shaped CP5 candidate balance.
+- `data/tuning_active.json` — profile currently loaded by the game.
+- `data/tuning.json` — retained as the earlier CP3 tuning snapshot/reference.
+
+The game now maps rooms to five balance stages:
+
+1. **Introduction** — Entrance / Reception.
+2. **Investigation** — Security / Archive / Laboratory.
+3. **Rising Danger** — Detention / Maintenance / Storage.
+4. **Peak Tension** — Containment.
+5. **Resolution** — Final Investigation.
+
+The active AFTER curve is `0.75 -> 0.88 -> 1.00 -> 1.12 -> 1.06`. Monster speed, detection/hearing pressure, reaction timing, search duration, cross-room pursuit delay, and respawn pacing are derived through `src/balance.odin` rather than room-specific hardcoded constants.
+
+### CP5 runtime controls
+
+- `F5` — reload `data/tuning_active.json` without recompiling.
+- `F9` — write a CP5 telemetry snapshot to `telemetry/`.
+
+To switch profiles from the repository root:
+
+```bash
+cp data/tuning_before.json data/tuning_active.json
+```
+
+or:
+
+```bash
+cp data/tuning_after.json data/tuning_active.json
+```
+
+Then press `F5` in a running build (or restart the game). The HUD displays the active profile and current balance stage.
+
+### CP5 evidence collection
+
+Telemetry is observational and does not alter game rules. It records:
+
+- active gameplay time;
+- room/objective time;
+- wrong puzzle submissions;
+- hints shown;
+- monster encounters and escapes;
+- captures;
+- total chase duration;
+- checkpoint retries.
+
+Use the reproducible procedure in `docs/CP5_PLAYTEST_PROTOCOL.md`. Actual playtest measurements must be gathered by running the game; the repository does not fabricate human results.
+
+See:
+
+- `docs/CP5_BASELINE_ASSESSMENT.md`
+- `docs/CP5_BALANCING_REPORT.md`
+- `docs/CP5_DEMO_SCRIPT.md`
+- `docs/CP5_PLAYTEST_PROTOCOL.md`
+- `telemetry/README.md`
+
+## Narrative Integration — Project Resonance
+
+The current narrative is documented in `docs/NARRATIVE_BIBLE.md`. The underground annex began as a concealed civil-defence communications site beneath St. Mercy Cemetery before being repurposed by Dr. Adrian Vale for Project Resonance. The four missing civilians are Lena Park, Mateo Ruiz, Evan Cole, and Leah Morrison. The Clay Stalker is Subject C-17, former security officer Elias Voss. The scanner is tied directly to the facility's tri-band maintenance/containment infrastructure rather than existing only as an abstract puzzle tool.
+
+Environmental evidence is distributed through Reception, Archive, Laboratory, Detention, Maintenance, Storage, Containment, and Final Investigation so the final reveal is foreshadowed by earlier discoveries.
+
+CP5 telemetry metadata can be labelled externally with `telemetry_scenario` and `telemetry_conditions` in the active tuning JSON; these labels are written into every F9 CSV snapshot alongside the build ID and profile.

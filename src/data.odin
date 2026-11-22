@@ -6,6 +6,12 @@ import "core:os"
 import rl "vendor:raylib"
 
 Tuning :: struct {
+    // CP5 profile metadata. 0 = BEFORE (pre-CP5 numeric snapshot), 1 = AFTER.
+    profile_id:           i32,
+    telemetry_enabled:    bool,
+    telemetry_scenario:   string,
+    telemetry_conditions: string,
+
     player_speed:      f32,
     interact_distance: f32,
     message_duration:  f32,
@@ -34,27 +40,85 @@ Tuning :: struct {
 
     hint_interval_seconds:      f32,
     hint_notification_seconds:  f32,
+
+    // CP5 authored difficulty curve. These multipliers are applied to monster
+    // pressure by room stage while the base mechanics/content remain identical.
+    difficulty_intro_scale:         f32,
+    difficulty_investigation_scale: f32,
+    difficulty_rising_scale:        f32,
+    difficulty_peak_scale:          f32,
+    difficulty_resolution_scale:    f32,
 }
 
-Spawn_Data :: struct {
-    kind:       string,
-    x:          f32,
-    y:          f32,
-    w:          f32,
-    h:          f32,
-    target:     string,
-    target_x:   f32,
-    target_y:   f32,
-    interact:   bool,
-    container:  string,
+tuning_profile_name :: proc(profile_id: i32) -> cstring {
+    if profile_id == 0 { return "BEFORE" }
+    if profile_id == 1 { return "AFTER" }
+    return "CUSTOM"
 }
 
-Level_Data :: struct {
-    spawns: []Spawn_Data,
+tuning_profile_name_string :: proc(profile_id: i32) -> string {
+    if profile_id == 0 { return "BEFORE" }
+    if profile_id == 1 { return "AFTER" }
+    return "CUSTOM"
+}
+
+clamp_tuning_value :: proc(value, lo, hi: f32) -> f32 {
+    if value < lo { return lo }
+    if value > hi { return hi }
+    return value
+}
+
+sanitize_tuning :: proc(tuning: ^Tuning) {
+    // Invalid/malformed numeric values are clamped to conservative gameplay
+    // ranges so an external edit cannot create an unusable build.
+    tuning.player_speed = clamp_tuning_value(tuning.player_speed, 80, 260)
+    tuning.interact_distance = clamp_tuning_value(tuning.interact_distance, 50, 220)
+    tuning.message_duration = clamp_tuning_value(tuning.message_duration, 0.5, 8)
+    tuning.ambient_volume = clamp_tuning_value(tuning.ambient_volume, 0, 1)
+
+    tuning.scanner_range = clamp_tuning_value(tuning.scanner_range, 80, 320)
+    tuning.scanner_pulse_seconds = clamp_tuning_value(tuning.scanner_pulse_seconds, 0.1, 2)
+
+    tuning.monster_patrol_speed = clamp_tuning_value(tuning.monster_patrol_speed, 20, 240)
+    tuning.monster_chase_speed = clamp_tuning_value(tuning.monster_chase_speed, 40, 280)
+    tuning.monster_detection_range = clamp_tuning_value(tuning.monster_detection_range, 60, 520)
+    tuning.monster_hearing_range = clamp_tuning_value(tuning.monster_hearing_range, 80, 720)
+    tuning.monster_alert_seconds = clamp_tuning_value(tuning.monster_alert_seconds, 0.15, 3)
+    tuning.monster_lost_seconds = clamp_tuning_value(tuning.monster_lost_seconds, 0.4, 8)
+    tuning.monster_search_seconds = clamp_tuning_value(tuning.monster_search_seconds, 1, 18)
+    tuning.monster_respawn_min = clamp_tuning_value(tuning.monster_respawn_min, 1, 40)
+    tuning.monster_respawn_max = clamp_tuning_value(tuning.monster_respawn_max, tuning.monster_respawn_min, 60)
+    tuning.monster_cross_room_delay = clamp_tuning_value(tuning.monster_cross_room_delay, 0.2, 5)
+    tuning.monster_disengage_seconds = clamp_tuning_value(tuning.monster_disengage_seconds, 0.5, 10)
+    tuning.chase_volume = clamp_tuning_value(tuning.chase_volume, 0, 1)
+
+    tuning.respawn_protection_seconds = clamp_tuning_value(tuning.respawn_protection_seconds, 0, 8)
+    tuning.jumpscare_duration = clamp_tuning_value(tuning.jumpscare_duration, 0.5, 4)
+    tuning.ambient_event_min = clamp_tuning_value(tuning.ambient_event_min, 2, 120)
+    tuning.ambient_event_max = clamp_tuning_value(tuning.ambient_event_max, tuning.ambient_event_min, 180)
+
+    tuning.hint_interval_seconds = clamp_tuning_value(tuning.hint_interval_seconds, 10, 300)
+    tuning.hint_notification_seconds = clamp_tuning_value(tuning.hint_notification_seconds, 2, 30)
+
+    tuning.difficulty_intro_scale = clamp_tuning_value(tuning.difficulty_intro_scale, 0.5, 1.5)
+    tuning.difficulty_investigation_scale = clamp_tuning_value(tuning.difficulty_investigation_scale, 0.5, 1.5)
+    tuning.difficulty_rising_scale = clamp_tuning_value(tuning.difficulty_rising_scale, 0.5, 1.5)
+    tuning.difficulty_peak_scale = clamp_tuning_value(tuning.difficulty_peak_scale, 0.5, 1.5)
+    tuning.difficulty_resolution_scale = clamp_tuning_value(tuning.difficulty_resolution_scale, 0.5, 1.5)
+
+    if tuning.profile_id < 0 || tuning.profile_id > 1 {
+        tuning.profile_id = 2
+    }
 }
 
 load_tuning :: proc(path: string) -> Tuning {
+    // Defaults intentionally match the pre-CP5 build, so a missing or malformed
+    // external file falls back to a known-playable baseline rather than zeroes.
     tuning := Tuning{
+        profile_id = 0,
+        telemetry_enabled = true,
+        telemetry_scenario = "security_to_containment",
+        telemetry_conditions = "manual_keyboard_mac",
         player_speed = 155,
         interact_distance = 118,
         message_duration = 2.7,
@@ -79,21 +143,46 @@ load_tuning :: proc(path: string) -> Tuning {
         ambient_event_max = 18.0,
         hint_interval_seconds = 60.0,
         hint_notification_seconds = 8.0,
+        difficulty_intro_scale = 1.0,
+        difficulty_investigation_scale = 1.0,
+        difficulty_rising_scale = 1.0,
+        difficulty_peak_scale = 1.0,
+        difficulty_resolution_scale = 1.0,
     }
 
     data, read_err := os.read_entire_file(path, context.allocator)
     if read_err != nil {
         fmt.eprintfln("Could not read tuning file %s: %v", path, read_err)
+        sanitize_tuning(&tuning)
         return tuning
     }
     defer delete(data)
 
     unmarshal_err := json.unmarshal(data, &tuning)
     if unmarshal_err != nil {
-        fmt.eprintfln("Could not parse tuning file %s", path)
+        fmt.eprintfln("Could not parse tuning file %s; using safe defaults where needed.", path)
     }
 
+    sanitize_tuning(&tuning)
+    fmt.printfln("[CP5] Loaded balance profile %s from %s", tuning_profile_name_string(tuning.profile_id), path)
     return tuning
+}
+
+Spawn_Data :: struct {
+    kind:       string,
+    x:          f32,
+    y:          f32,
+    w:          f32,
+    h:          f32,
+    target:     string,
+    target_x:   f32,
+    target_y:   f32,
+    interact:   bool,
+    container:  string,
+}
+
+Level_Data :: struct {
+    spawns: []Spawn_Data,
 }
 
 entity_kind_from_string :: proc(kind: string) -> (Entity_Kind, bool) {

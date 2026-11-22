@@ -18,7 +18,7 @@ main :: proc() {
     resources := load_resources()
     defer unload_resources(&resources)
 
-    tuning := load_tuning("data/tuning.json")
+    tuning := load_tuning("data/tuning_active.json")
     rl.SetMusicVolume(resources.ambience_music, tuning.ambient_volume)
     rl.SetMusicVolume(resources.chase_music, tuning.chase_volume)
 

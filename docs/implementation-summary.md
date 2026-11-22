@@ -95,3 +95,44 @@ Added `src/items.odin` and `src/interaction_ui.odin` as reusable systems. Search
 - `src/facility_art.odin` — router screen no longer exposes the answer and laser grid animates down after success.
 - `data/levels/reception.json` — restores the 20A fuse as a visible world pickup.
 - `data/tuning.json` — external 60-second hint interval and notification duration.
+
+## Documentation / Attribution Integrity Pass
+
+The final documentation pass aligns the project records with the current CP4-era feature set:
+
+- `ATTRIBUTION.md` now separates external/user-provided assets, original project assets, design inspirations, AI-assisted development, and the CP4 movement justification.
+- Unverified third-party audio is explicitly marked as requiring creator/source/licence confirmation rather than assigning invented URLs or permissions.
+- `README.md` now documents the actual current controls and interaction priority for normal gameplay, Search UI, contextual item use, Inventory, Investigation Log, progressive hints, scanner controls and reduced-horror mode.
+- Configuration fields in `data/tuning.json`, including the hint timing fields, are documented.
+- `docs/final-project-integrity-summary.md` provides a concise deliverables/testing summary for final review.
+
+No gameplay architecture was replaced during this documentation pass.
+
+# CP5 implementation addendum
+
+## New source systems
+
+- `src/balance.odin` — maps rooms into the five-stage CP5 difficulty curve and derives effective monster pressure from external stage multipliers.
+- `src/telemetry.odin` — observational balancing telemetry and CSV snapshots.
+
+## New external data
+
+- `data/tuning_before.json` — preserved pre-CP5 numeric baseline.
+- `data/tuning_after.json` — candidate deliberately shaped balance.
+- `data/tuning_active.json` — runtime-loaded profile.
+
+The earlier `data/tuning.json` is retained as a CP3 history/reference file.
+
+## Existing files integrated with CP5
+
+- `src/data.odin` — tuning metadata, validation/clamping, active-profile logging.
+- `src/main.odin` — loads `tuning_active.json`.
+- `src/ai.odin` — uses stage-aware balance helpers and telemetry transitions.
+- `src/game.odin` — telemetry state, F5 profile reload, F9 snapshot, capture/survival instrumentation.
+- `src/hints.odin` — hint telemetry.
+- `src/puzzles.odin` — wrong-submission telemetry and final snapshot.
+- `src/ui.odin` — CP5 profile/stage display and expanded ending.
+
+## Narrative integration
+
+`docs/NARRATIVE_BIBLE.md` consolidates the existing mystery around St. Mercy Cemetery, Project Resonance, the four missing civilians, C-17/Elias Voss, Adrian Vale, and Leah Morrison's 2:14 AM call. Existing rooms are used for environmental storytelling rather than adding a disconnected narrative subsystem.
