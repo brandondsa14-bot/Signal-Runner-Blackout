@@ -88,3 +88,23 @@ UNDERGROUND RECEPTION
 - Evidence collection.
 
 Critical item state is stored in the persistent `Game` struct, so normal room transitions and deaths do not delete mandatory progression.
+
+## Optional Waste Processing dependency
+
+```text
+Maintenance Relay 3 online
+        ↓
+Waste Processing hatch accessible
+        ↓
+BLUE at service-bridge console
+        ↓
+YELLOW at service-bridge console
+        ↓
+Bridge extended
+        ↓
+Optional Relay 3 incident report
+        ↓
+Mateo Ruiz case receives additional corroboration
+```
+
+This branch is deliberately non-mandatory. It never supplies an item required by the main ending.

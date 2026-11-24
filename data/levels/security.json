@@ -107,11 +107,13 @@
       "h": 70
     },
     {
-      "kind": "SECURITY_CLUE",
-      "x": 170,
-      "y": 285,
-      "w": 54,
-      "h": 36
+      "kind": "SEARCHABLE_CONTAINER",
+      "x": 145,
+      "y": 270,
+      "w": 180,
+      "h": 62,
+      "container": "SECURITY_DESK",
+      "interact": true
     },
     {
       "kind": "LASER_BARRIER",
@@ -168,6 +170,30 @@
       "y": 270,
       "w": 1,
       "h": 1
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 730,
+      "y": 175,
+      "w": 70,
+      "h": 48,
+      "prop": "SECURITY_MONITOR"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 245,
+      "y": 286,
+      "w": 24,
+      "h": 22,
+      "prop": "SECURITY_COFFEE"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 300,
+      "y": 287,
+      "w": 42,
+      "h": 28,
+      "prop": "SECURITY_BINDER"
     }
   ]
 }

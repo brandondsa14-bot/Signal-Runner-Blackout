@@ -2,11 +2,14 @@ package main
 
 import rl "vendor:raylib"
 
-SCREEN_WIDTH  :: 1100
-SCREEN_HEIGHT :: 640
+SCREEN_WIDTH     :: 1100
+SCREEN_HEIGHT    :: 640
+HUD_BAND_HEIGHT :: 160
+WINDOW_WIDTH     :: SCREEN_WIDTH
+WINDOW_HEIGHT    :: SCREEN_HEIGHT + HUD_BAND_HEIGHT
 
 main :: proc() {
-    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Signal Runner: Blackout")
+    rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Signal Runner: Blackout")
     defer rl.CloseWindow()
 
     rl.InitAudioDevice()

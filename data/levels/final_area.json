@@ -87,6 +87,22 @@
       "y": 440,
       "w": 34,
       "h": 24
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 195,
+      "y": 190,
+      "w": 90,
+      "h": 70,
+      "prop": "FINAL_CASE_BOARD"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 800,
+      "y": 390,
+      "w": 55,
+      "h": 34,
+      "prop": "FINAL_RADIO"
     }
   ]
 }

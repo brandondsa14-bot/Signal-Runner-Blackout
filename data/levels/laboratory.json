@@ -189,6 +189,30 @@
       "y": 150,
       "w": 1,
       "h": 1
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 215,
+      "y": 315,
+      "w": 105,
+      "h": 42,
+      "prop": "LAB_EXAM_TABLE"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 495,
+      "y": 315,
+      "w": 72,
+      "h": 46,
+      "prop": "LAB_COMPUTER"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 770,
+      "y": 315,
+      "w": 70,
+      "h": 28,
+      "prop": "LAB_SAMPLE_TRAY"
     }
   ]
 }

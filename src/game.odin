@@ -29,14 +29,17 @@ Game :: struct {
     // Scanner and investigation systems.
     scanner_mode:        Scanner_Mode,
     scanner_pulse_timer: f32,
+    scanner_select_feedback: f32,
 
     // Facility progression / inventory.
     has_spare_fuse:          bool,
+    reception_fuse_collected: bool,
     reception_power:         bool,
     security_sequence_step:  int,
     security_unlocked:       bool,
     security_keycard:        bool,
     security_intro_seen:     bool,
+    security_instructions_read: bool,
     security_clue_read:      bool,
     security_router_seen:    bool,
     security_laser_shutdown: f32,
@@ -54,6 +57,9 @@ Game :: struct {
     has_screwdriver:         bool,
     maintenance_panel_open:  bool,
     maintenance_online:      bool,
+    processing_console_step: int,
+    processing_bridge_extended: bool,
+    processing_evidence:     bool,
     containment_node_a:      bool,
     containment_node_b:      bool,
     containment_node_c:      bool,
@@ -63,6 +69,17 @@ Game :: struct {
     final_decrypted:         bool,
     optional_photo:          bool,
 
+    // Detective-case clue state. These are independent discoveries so the final
+    // report can distinguish confirmed facts from unresolved questions.
+    case_lena_clue:          bool,
+    case_mateo_clue:         bool,
+    case_evan_clue:          bool,
+    case_leah_clue:          bool,
+    evidence:                [EVIDENCE_COUNT]bool,
+    investigation_tab:       int,
+    prop_interactions:       [PROP_COUNT]u8,
+    prop_event_timer:        f32,
+    prop_event_id:           Prop_ID,
 
     // Reusable inventory / searchable-container systems.
     inventory:          [ITEM_COUNT]bool,
@@ -80,9 +97,13 @@ Game :: struct {
     security_door_unlocked: bool,
     archive_door_unlocked:  bool,
 
-    // Player animation and persistent Reception power-transition presentation.
+    // Player animation, interaction targeting, collision diagnostics and persistent Reception power presentation.
     player_moving:      bool,
     player_walk_phase:  f32,
+    interaction_target_index: int,
+    interaction_candidate_count: int,
+    interaction_cycle: int,
+    debug_collision: bool,
     reception_power_transition: f32,
     reception_power_flicker:    f32,
 
@@ -124,6 +145,8 @@ Game :: struct {
     // Shared dialogue/message system.
     message_timer: f32,
     message_kind:  int,
+    custom_message_line1: cstring,
+    custom_message_line2: cstring,
 }
 
 new_game :: proc(resources: ^Resources, tuning: Tuning) -> Game {
@@ -157,13 +180,16 @@ reset_progress :: proc(game: ^Game) {
 
     game.scanner_mode = .RED
     game.scanner_pulse_timer = 0
+    game.scanner_select_feedback = 0
 
     game.has_spare_fuse = false
+    game.reception_fuse_collected = false
     game.reception_power = false
     game.security_sequence_step = 0
     game.security_unlocked = false
     game.security_keycard = false
     game.security_intro_seen = false
+    game.security_instructions_read = false
     game.security_clue_read = false
     game.security_router_seen = false
     game.security_laser_shutdown = 0
@@ -181,6 +207,9 @@ reset_progress :: proc(game: ^Game) {
     game.has_screwdriver = false
     game.maintenance_panel_open = false
     game.maintenance_online = false
+    game.processing_console_step = 0
+    game.processing_bridge_extended = false
+    game.processing_evidence = false
     game.containment_node_a = false
     game.containment_node_b = false
     game.containment_node_c = false
@@ -189,6 +218,15 @@ reset_progress :: proc(game: ^Game) {
     game.has_experiment_log = false
     game.final_decrypted = false
     game.optional_photo = false
+    game.case_lena_clue = false
+    game.case_mateo_clue = false
+    game.case_evan_clue = false
+    game.case_leah_clue = false
+    for i := 0; i < EVIDENCE_COUNT; i += 1 { game.evidence[i] = false }
+    game.investigation_tab = 0
+    for i := 0; i < PROP_COUNT; i += 1 { game.prop_interactions[i] = 0 }
+    game.prop_event_timer = 0
+    game.prop_event_id = .NONE
 
     for i := 0; i < ITEM_COUNT; i += 1 { game.inventory[i] = false }
     for i := 0; i < SEARCH_OBJECT_COUNT; i += 1 { game.search_object_taken[i] = false }
@@ -206,6 +244,10 @@ reset_progress :: proc(game: ^Game) {
     game.archive_door_unlocked = false
     game.player_moving = false
     game.player_walk_phase = 0
+    game.interaction_target_index = -1
+    game.interaction_candidate_count = 0
+    game.interaction_cycle = 0
+    game.debug_collision = false
     game.reception_power_transition = 0
     game.reception_power_flicker = 0
 
@@ -236,6 +278,8 @@ reset_progress :: proc(game: ^Game) {
     game.world_time = 0
     game.message_timer = 0
     game.message_kind = 0
+    game.custom_message_line1 = ""
+    game.custom_message_line2 = ""
     game.ambient_event_timer = random_ambient_delay(game)
     telemetry_reset(game)
 
@@ -258,12 +302,19 @@ show_message :: proc(game: ^Game, kind: int) {
 
 change_room :: proc(game: ^Game, target: Room_ID, target_position: rl.Vector2) {
     pursuit_carried := game.enemy.active &&
-        (game.enemy.state == .ALERT || game.enemy.state == .CHASE || game.enemy.state == .SEARCH)
+        (game.enemy.state == .SUSPICIOUS || game.enemy.state == .INVESTIGATE || game.enemy.state == .ALERT ||
+         game.enemy.state == .CHASE || game.enemy.state == .SEARCH)
 
     if load_level_file(game, room_path(target), target) {
         if game.player_index >= 0 && (target_position[0] != 0 || target_position[1] != 0) {
             game.entities[game.player_index].position = target_position
         }
+        if game.player_index >= 0 {
+            _ = resolve_player_overlap(game, &game.entities[game.player_index])
+        }
+        game.interaction_target_index = -1
+        game.interaction_candidate_count = 0
+        game.interaction_cycle = 0
         game.player_hidden = false
         enemy_on_room_change(game, pursuit_carried, target_position)
 
@@ -408,6 +459,8 @@ entity_solid_for_player :: proc(game: ^Game, entity: ^Entity) -> bool {
     #partial switch entity.kind {
     case .WALL, .BLOCKER, .HIDE_SPOT, .DOOR_TRIGGER, .SEARCHABLE_CONTAINER:
         return true
+    case .PROCESSING_BRIDGE_LOCK:
+        return !game.processing_bridge_extended
     case .SIGNAL_BARRIER:
         return !game.red_signal_on
     case .CEMETERY_DOOR:
@@ -419,8 +472,26 @@ entity_solid_for_player :: proc(game: ^Game, entity: ^Entity) -> bool {
     }
 }
 
-player_collides_world :: proc(game: ^Game, player: ^Entity) -> bool {
-    rect := entity_rect(player)
+player_world_rect_at :: proc(player: ^Entity, position: rl.Vector2) -> rl.Rectangle {
+    // Top-down movement uses a lower-body collision box. The full sprite remains
+    // visible, but shoulders/hair no longer snag on furniture the player has
+    // visibly cleared.
+    inset_x: f32 = 4
+    inset_top: f32 = 10
+    return rl.Rectangle{
+        x = position[0] + inset_x,
+        y = position[1] + inset_top,
+        width = player.size[0] - inset_x * 2,
+        height = player.size[1] - inset_top,
+    }
+}
+
+player_world_rect :: proc(player: ^Entity) -> rl.Rectangle {
+    return player_world_rect_at(player, player.position)
+}
+
+player_collides_world_at :: proc(game: ^Game, player: ^Entity, position: rl.Vector2) -> bool {
+    rect := player_world_rect_at(player, position)
     for i := 0; i < game.entity_count; i += 1 {
         entity := &game.entities[i]
         if !entity.active || entity.kind == .PLAYER || !entity_solid_for_player(game, entity) {
@@ -433,11 +504,42 @@ player_collides_world :: proc(game: ^Game, player: ^Entity) -> bool {
     return false
 }
 
+player_collides_world :: proc(game: ^Game, player: ^Entity) -> bool {
+    return player_collides_world_at(game, player, player.position)
+}
+
+resolve_player_overlap :: proc(game: ^Game, player: ^Entity) -> bool {
+    if !player_collides_world(game, player) { return true }
+
+    origin := player.position
+    // Recover from small spawn/rounding overlaps instead of leaving the player
+    // trapped against invisible geometry. Search nearest positions first.
+    for radius: i32 = 1; radius <= 18; radius += 1 {
+        r := f32(radius)
+        candidates := [8]rl.Vector2{
+            rl.Vector2{origin[0] + r, origin[1]},
+            rl.Vector2{origin[0] - r, origin[1]},
+            rl.Vector2{origin[0], origin[1] + r},
+            rl.Vector2{origin[0], origin[1] - r},
+            rl.Vector2{origin[0] + r, origin[1] + r},
+            rl.Vector2{origin[0] - r, origin[1] + r},
+            rl.Vector2{origin[0] + r, origin[1] - r},
+            rl.Vector2{origin[0] - r, origin[1] - r},
+        }
+        for candidate in candidates {
+            if !player_collides_world_at(game, player, candidate) {
+                player.position = candidate
+                return true
+            }
+        }
+    }
+    player.position = origin
+    return false
+}
+
 update_player_facing_and_velocity :: proc(game: ^Game, player: ^Entity) {
     player.velocity = rl.Vector2{0, 0}
-    if game.player_hidden {
-        return
-    }
+    if game.player_hidden { return }
 
     speed := game.tuning.player_speed
     if rl.IsKeyDown(.W) || rl.IsKeyDown(.UP) {
@@ -457,28 +559,40 @@ update_player_facing_and_velocity :: proc(game: ^Game, player: ^Entity) {
         game.player_facing = .RIGHT
     }
 
-    game.player_moving = player.velocity[0] != 0 || player.velocity[1] != 0
+    // Preserve the configured speed on diagonals instead of making diagonal
+    // movement ~41% faster than cardinal movement.
+    if player.velocity[0] != 0 && player.velocity[1] != 0 {
+        direction := rl.Vector2Normalize(player.velocity)
+        player.velocity = rl.Vector2{direction[0] * speed, direction[1] * speed}
+    }
 }
 
-move_player_with_collision :: proc(game: ^Game, player: ^Entity, dt: f32) {
-    old_x := player.position[0]
-    player.position[0] += player.velocity[0] * dt
-    if player_collides_world(game, player) {
-        player.position[0] = old_x
+move_player_with_collision :: proc(game: ^Game, player: ^Entity, dt: f32) -> bool {
+    before := player.position
+    _ = resolve_player_overlap(game, player)
+
+    // X then Y produces natural wall sliding while preserving top-down controls.
+    candidate_x := rl.Vector2{player.position[0] + player.velocity[0] * dt, player.position[1]}
+    if !player_collides_world_at(game, player, candidate_x) {
+        player.position[0] = candidate_x[0]
     }
 
-    old_y := player.position[1]
-    player.position[1] += player.velocity[1] * dt
-    if player_collides_world(game, player) {
-        player.position[1] = old_y
+    candidate_y := rl.Vector2{player.position[0], player.position[1] + player.velocity[1] * dt}
+    if !player_collides_world_at(game, player, candidate_y) {
+        player.position[1] = candidate_y[1]
     }
+
+    dx := player.position[0] - before[0]
+    dy := player.position[1] - before[1]
+    return dx*dx + dy*dy > 0.01
 }
 
 update_ambient_events :: proc(game: ^Game, dt: f32) {
     if game.room == .ENTRANCE || game.state != .PLAYING {
         return
     }
-    if game.enemy.state == .ALERT || game.enemy.state == .CHASE {
+    if game.enemy.state == .SUSPICIOUS || game.enemy.state == .INVESTIGATE ||
+       game.enemy.state == .ALERT || game.enemy.state == .CHASE || game.enemy.state == .SEARCH {
         return
     }
 
@@ -513,6 +627,10 @@ update_playing :: proc(game: ^Game, dt: f32) {
         } else if rl.IsKeyPressed(.TAB) {
             game.objectives_open = false
             game.inventory_open = true
+        } else if rl.IsKeyPressed(.LEFT) || rl.IsKeyPressed(.A) {
+            game.investigation_tab = 0
+        } else if rl.IsKeyPressed(.RIGHT) || rl.IsKeyPressed(.D) {
+            game.investigation_tab = 1
         }
         return
     }
@@ -578,10 +696,12 @@ update_playing :: proc(game: ^Game, dt: f32) {
 
     if game.message_timer > 0 { game.message_timer -= dt }
     if game.scanner_pulse_timer > 0 { game.scanner_pulse_timer -= dt }
+    if game.scanner_select_feedback > 0 { game.scanner_select_feedback -= dt }
     if game.respawn_protection > 0 { game.respawn_protection -= dt }
     if game.reception_power_flicker > 0 { game.reception_power_flicker -= dt }
     if game.security_laser_shutdown > 0 { game.security_laser_shutdown -= dt }
     if game.hint_notification_timer > 0 { game.hint_notification_timer -= dt }
+    if game.prop_event_timer > 0 { game.prop_event_timer -= dt }
     if game.reception_power && game.reception_power_transition < 1.0 {
         game.reception_power_transition += dt * 0.72
         if game.reception_power_transition > 1.0 { game.reception_power_transition = 1.0 }
@@ -605,44 +725,52 @@ update_playing :: proc(game: ^Game, dt: f32) {
             show_message(game, 3)
         }
     } else {
-        if rl.IsKeyPressed(.ONE) { game.scanner_mode = .RED }
-        if rl.IsKeyPressed(.TWO) { game.scanner_mode = .BLUE }
-        if rl.IsKeyPressed(.THREE) { game.scanner_mode = .YELLOW }
+        if rl.IsKeyPressed(.ONE) { game.scanner_mode = .RED; game.scanner_select_feedback = 1.25 }
+        if rl.IsKeyPressed(.TWO) { game.scanner_mode = .BLUE; game.scanner_select_feedback = 1.25 }
+        if rl.IsKeyPressed(.THREE) { game.scanner_mode = .YELLOW; game.scanner_select_feedback = 1.25 }
         if rl.IsKeyPressed(.F) { handle_scanner_pulse(game) }
     }
 
     player := &game.entities[game.player_index]
     update_player_facing_and_velocity(game, player)
-    move_player_with_collision(game, player, dt)
+    game.player_moving = move_player_with_collision(game, player, dt)
     if game.player_moving {
         cycle_speed := game.tuning.player_speed / 18.0
         if game.enemy.state == .CHASE { cycle_speed *= 1.35 }
         game.player_walk_phase += dt * cycle_speed
         if game.player_walk_phase > 1000 { game.player_walk_phase = 0 }
+    } else {
+        game.player_walk_phase = 0
+    }
+
+    refresh_interaction_target(game)
+    if rl.IsKeyPressed(.Q) {
+        cycle_interaction_target(game)
+    }
+
+    if rl.IsKeyPressed(.F8) {
+        game.debug_collision = !game.debug_collision
     }
 
     if rl.IsKeyPressed(.E) {
         old_room := game.room
-        for i := 0; i < game.entity_count; i += 1 {
+        i := game.interaction_target_index
+        if i >= 0 && i < game.entity_count {
             entity := &game.entities[i]
-            if !entity.active || entity.kind == .PLAYER || !near_entity(game, entity) {
-                continue
+            if entity.active && near_entity(game, entity) {
+                if entity.kind == .SEARCHABLE_CONTAINER {
+                    open_search_container(game, entity.container_id)
+                } else if entity.kind == .POWER_PANEL && !game.reception_power {
+                    open_item_selector(game, i)
+                } else if entity.kind == .MAINT_PANEL && !game.maintenance_panel_open {
+                    open_item_selector(game, i)
+                } else if entity.kind == .DOOR_TRIGGER && entity_requires_item_selection(game, entity) {
+                    open_item_selector(game, i)
+                } else {
+                    handle_entity_interaction(game, entity)
+                }
+                if game.room != old_room { return }
             }
-            if entity.kind == .SEARCHABLE_CONTAINER {
-                open_search_container(game, entity.container_id)
-            } else if entity.kind == .POWER_PANEL && !game.reception_power {
-                open_item_selector(game, i)
-            } else if entity.kind == .MAINT_PANEL && !game.maintenance_panel_open {
-                open_item_selector(game, i)
-            } else if entity.kind == .DOOR_TRIGGER && entity_requires_item_selection(game, entity) {
-                open_item_selector(game, i)
-            } else {
-                handle_entity_interaction(game, entity)
-            }
-            if game.room != old_room {
-                return
-            }
-            break
         }
     }
 
@@ -654,7 +782,21 @@ render_game :: proc(game: ^Game) {
     switch game.state {
     case .TITLE:      render_title(game)
     case .STORY:      render_story(game)
-    case .PLAYING:    render_playing(game)
+    case .PLAYING:
+        // The persistent objective/map HUD lives in a dedicated band above the
+        // original 1100x640 gameplay coordinate space. Keeping the world
+        // coordinates unchanged preserves every level, collision and AI path.
+        rl.ClearBackground(rl.Color{7, 8, 9, 255})
+        draw_external_hud(game)
+        camera := rl.Camera2D{
+            offset = rl.Vector2{0, f32(HUD_BAND_HEIGHT)},
+            target = rl.Vector2{0, 0},
+            rotation = 0,
+            zoom = 1,
+        }
+        rl.BeginMode2D(camera)
+        render_playing(game)
+        rl.EndMode2D()
     case .JUMPSCARE:  render_jumpscare(game)
     case .GAME_OVER:  render_game_over(game)
     case .ENDING:     render_ending(game)

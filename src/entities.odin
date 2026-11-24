@@ -21,6 +21,7 @@ Entity_Kind :: enum {
     MONSTER_ENTRY,
     HIDE_SPOT,
     SEARCHABLE_CONTAINER,
+    INSPECTABLE_PROP,
 
     // Reception / power.
     FUSE_ITEM,
@@ -50,6 +51,11 @@ Entity_Kind :: enum {
     SCREWDRIVER_ITEM,
     MAINT_PANEL,
     NOISE_PIPE,
+
+    // Optional hazardous-waste processing chamber.
+    PROCESSING_CONSOLE,
+    PROCESSING_BRIDGE_LOCK,
+    PROCESSING_EVIDENCE,
 
     // Containment.
     CONTAINMENT_NODE_A,
@@ -83,6 +89,7 @@ Entity :: struct {
     target_position:   rl.Vector2,
     requires_interact: bool,
     container_id:      Container_ID,
+    prop_id:           Prop_ID,
 }
 
 entity_rect :: proc(entity: ^Entity) -> rl.Rectangle {

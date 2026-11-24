@@ -175,6 +175,22 @@
       "y": 150,
       "w": 1,
       "h": 1
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 430,
+      "y": 250,
+      "w": 120,
+      "h": 60,
+      "prop": "CONTAINMENT_GLASS"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 590,
+      "y": 330,
+      "w": 92,
+      "h": 42,
+      "prop": "CONTAINMENT_GURNEY"
     }
   ]
 }

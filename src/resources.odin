@@ -14,6 +14,8 @@ Resources :: struct {
     jumpscare_sound:  rl.Sound,
     distant_metal:    rl.Sound,
     power_restore_sound: rl.Sound,
+    plumbing_sound:      rl.Sound,
+    monitor_flicker_sound: rl.Sound,
 }
 
 load_resources :: proc() -> Resources {
@@ -31,6 +33,8 @@ load_resources :: proc() -> Resources {
     resources.jumpscare_sound = rl.LoadSound("assets/monster_jumpscare.wav")
     resources.distant_metal   = rl.LoadSound("assets/distant_metal.wav")
     resources.power_restore_sound = rl.LoadSound("assets/power_restore.wav")
+    resources.plumbing_sound = rl.LoadSound("assets/plumbing.wav")
+    resources.monitor_flicker_sound = rl.LoadSound("assets/monitor_flicker.wav")
 
     resources.ambience_music.looping = true
     resources.chase_music.looping = true
@@ -51,4 +55,6 @@ unload_resources :: proc(resources: ^Resources) {
     rl.UnloadSound(resources.jumpscare_sound)
     rl.UnloadSound(resources.distant_metal)
     rl.UnloadSound(resources.power_restore_sound)
+    rl.UnloadSound(resources.plumbing_sound)
+    rl.UnloadSound(resources.monitor_flicker_sound)
 }

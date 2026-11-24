@@ -253,3 +253,44 @@ Then verify:
 ## Human-evidence status
 
 No human playtest metrics are pre-filled. The `telemetry/CP5_RESULTS_TEMPLATE.csv` file is intentionally blank. Populate the CP5 report only with actual measurements gathered from gameplay.
+
+## 2026-11-20 quality-pass static verification
+
+A source/data validation pass checked the integrated quality-pass tree for:
+
+- valid JSON in all level/tuning files;
+- exactly one `PLAYER` spawn per active level;
+- valid level entity kinds, target-room names, container IDs and environmental prop IDs;
+- required asset paths referenced by `src/resources.odin`;
+- balanced source delimiters across Odin files;
+- duplicate package-level procedure names;
+- `game.<field>` and `game.resources.<field>` references against their structs;
+- exhaustive `Entity_Kind`, `Room_ID` and `Enemy_State` switches in the major dispatch paths;
+- inclusion of the optional Processing room in room data / telemetry.
+
+The static validation passed in the packaging environment.
+
+### Not yet runtime-verified in this environment
+
+The packaging environment does not provide the Odin compiler or a graphical raylib runtime. Therefore this pass does **not** claim successful compilation, frame-by-frame collision feel, audio playback, monster navigation quality or complete playthrough verification here.
+
+Run the authoritative manual matrix in `docs/REGRESSION_TEST_PLAN.md` on the project Mac, beginning with:
+
+```bash
+odin check src
+odin run src
+```
+
+## 2026-11-23 UI / HUD / Environment polish validation
+
+Static package checks completed for this pass:
+
+- all JSON files parse;
+- Odin source delimiter structure is balanced;
+- no duplicate procedure declarations were found;
+- known subset `Entity_Kind` switches in `ui.odin` remain explicitly `#partial`;
+- all literal `assets/...` references resolve to packaged files;
+- new environmental set dressing is render-only and does not modify level JSON/collision data.
+
+Runtime compilation and visual/gameplay regression testing are **not claimed** in the packaging environment because the Odin compiler is unavailable there. Run `odin check src`, then `odin run src`, and complete the `REGRESSION_TEST_PLAN.md` addendum on the target Mac before committing the pass.
+

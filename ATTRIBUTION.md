@@ -326,3 +326,87 @@ AI assistance did **not** generate or fabricate human playtest results. Any CP5 
 ## Verification / attribution integrity note
 
 The CP5 code and documentation distinguish source/static verification from actual runtime or human-playtest verification. Do not cite empty telemetry templates as completed playtest evidence. Third-party asset authors, URLs, and licences remain exactly as documented in the pre-existing attribution sections; no unverified external attribution details were invented during this pass.
+
+---
+
+# 2026-11-20 Reliability, Investigation, Environment & AI Quality Pass
+
+## Original implementation for Signal Runner: Blackout
+
+The following additions/modifications were implemented specifically for this project on top of the existing Odin + raylib game architecture:
+
+- nearest-point-on-bounds E-interaction range checks shared by prompts and actions;
+- deterministic nearest-interactable selection plus `Q` cycling for overlapping targets;
+- state-aware filtering of already-consumed one-time world pickups;
+- persistent one-time Reception fuse world state, separate from whether the consumable fuse is currently in inventory;
+- lower-body player collision, axis-separated wall sliding, diagonal speed normalization and small-overlap recovery;
+- movement animation synchronized to confirmed displacement rather than requested input;
+- `F8` collision/interaction diagnostic rendering;
+- Security Officer Desk search flow separating scanner operating instructions from the actual four-frequency handover clue;
+- expanded scanner success/reset feedback and state-aware objective/hint guidance;
+- Clay Stalker `SUSPICIOUS` and `INVESTIGATE` behaviour, last-known-position handling, fairer cross-room entry memory, lower-body navigation collision and depenetration;
+- structured detective evidence IDs, case associations, discovery locations and evidence-log presentation;
+- distinct evidence chains for Lena Park, Mateo Ruiz, Evan Cole and Leah Morrison;
+- room-specific procedural pixel-art detail and data-driven environmental inspectables;
+- optional Hazardous Waste Processing room, scanner-operated service bridge and optional Relay 3 incident report;
+- Processing-room integration with minimap, hints, monster navigation, room progression and CP5 telemetry;
+- updated ending/case-report text that resolves the mandatory investigation while allowing optional evidence to add corroboration.
+
+## Original project-created assets added in this pass
+
+- `assets/plumbing.wav` — original synthesized short plumbing/gurgle effect created for Signal Runner: Blackout; used by optional Detention plumbing interaction.
+- `assets/monitor_flicker.wav` — original synthesized short electronic/flicker effect created for Signal Runner: Blackout; used by surveillance-monitor atmosphere.
+- Additional room detail in `src/facility_art.odin` is procedural programmer art drawn with raylib primitives; no new third-party room sprite sheet was introduced for this pass.
+
+## Inspirations
+
+- *Ao Oni* remains a high-level reference for survival-horror pursuit tension, room-to-room pressure, exploration and environmental puzzle pacing.
+- Detective/investigation presentation is informed by general mystery-game conventions such as revisitable evidence, corroboration across locations and a final case resolution.
+- Hazardous Waste Processing uses an original industrial-runoff/service-bridge scenario appropriate to the existing facility. It intentionally avoids importing platforming physics that conflict with the top-down movement model.
+
+These references supplied **design inspiration only**. They did not provide source code, level data, sprites, puzzle files, audio, AI logic or copied room layouts used by this implementation.
+
+## External assets
+
+No new third-party asset with an externally sourced creator/licence was added specifically for this 2026-11-20 quality pass. Existing third-party/user-provided asset entries earlier in this file remain unchanged and continue to require the permissions/licensing already noted there.
+
+## AI assistance disclosure
+
+OpenAI ChatGPT assisted with:
+
+- inspection of the existing architecture and identification of the interaction/collision root causes;
+- generation/refinement of Odin code for proximity targeting, collision recovery, monster state/navigation integration, evidence data and optional-room systems;
+- procedural environmental-art code and original environmental interaction writing;
+- narrative continuity and evidence-chain planning for the four missing-person cases;
+- static source/data review and regression-test design;
+- documentation, changelog, CP5-integrity notes and QA instructions.
+
+AI assistance did not supply fabricated human playtest evidence. Runtime/compile claims for this pass must be based on the project author's actual `odin check src` / `odin run src` results on macOS.
+
+## CP5 integrity note
+
+The historical CP5 BEFORE / AFTER profiles are preserved. The post-CP5 `monster_investigate_seconds` parameter is externalized with the same value (`2.6`) in the preserved BEFORE and AFTER profiles, so it does not fabricate a new before/after delta. Waste Processing uses the existing Rising Danger stage rather than hard-coded monster difficulty. Any later balancing adjustment should be recorded with old value, new value, rationale and evidence.
+
+# 2026-11-23 — UI / HUD / Environmental Cohesion Pass
+
+## Original implementation for Signal Runner: Blackout
+
+- `src/text_ui.odin`: reusable width-aware wrapping for cstring UI text using Raylib text measurement and explicit panel widths.
+- Dedicated non-playfield investigation HUD band: keeps **Current Objective / Next Step** and **Facility Map** visible above the gameplay viewport rather than covering the world.
+- Gameplay remains in the existing 1100×640 coordinate space; the window/camera layout supplies the additional HUD area without moving level entities or changing collision/puzzle coordinates.
+- Mouse coordinate conversion for inventory/search/contextual item selectors after the gameplay viewport offset.
+- Room-specific visual-only environmental set dressing in `src/facility_art.odin`, including abandoned visitor/reception details, security/network clutter, archive storage, medical equipment, detention wear, maintenance infrastructure, hazardous-processing equipment, containment damage, evidence-room detail, and final-investigation case material.
+- Decorative additions are programmer art drawn with Raylib primitives and deliberately have no collision or gameplay interaction unless an existing data-driven entity already supplies it.
+
+## External assets
+
+No new third-party image, font, music, or sound asset was introduced by this UI/environment polish pass. Existing external/user-provided asset entries above remain unchanged and continue to require the licences/source details already noted there.
+
+## Inspiration
+
+The pass uses general survival-horror and investigative-environment design principles: readable UI, environmental storytelling, clear navigation silhouettes, purposeful room identity, and visual separation between interactable gameplay objects and background set dressing. No code or art asset from a referenced commercial game was copied into the project.
+
+## AI assistance disclosure
+
+OpenAI ChatGPT assisted with auditing the existing Odin/raylib rendering structure, proposing and generating the reusable text-wrapping/HUD layout code, designing original primitive-based environmental set dressing, identifying potential regression points, and preparing documentation/static validation. Final runtime compilation and gameplay verification remain the project author's responsibility on the course development machine.
+

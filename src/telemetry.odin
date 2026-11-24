@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import "core:os"
 
-CP5_BUILD_VERSION :: "cp5-2026-11-20"
+CP5_BUILD_VERSION :: "cp5-quality-pass-2026-11-20"
 
 Telemetry :: struct {
     enabled:                   bool,
@@ -119,6 +119,7 @@ write_telemetry_snapshot :: proc(game: ^Game) -> bool {
         LABORATORY,%.2f
         DETENTION,%.2f
         MAINTENANCE,%.2f
+        PROCESSING,%.2f
         CONTAINMENT,%.2f
         FINAL_AREA,%.2f
         STORAGE,%.2f
@@ -155,6 +156,7 @@ write_telemetry_snapshot :: proc(game: ^Game) -> bool {
         game.telemetry.room_seconds[int(Room_ID.LABORATORY)],
         game.telemetry.room_seconds[int(Room_ID.DETENTION)],
         game.telemetry.room_seconds[int(Room_ID.MAINTENANCE)],
+        game.telemetry.room_seconds[int(Room_ID.PROCESSING)],
         game.telemetry.room_seconds[int(Room_ID.CONTAINMENT)],
         game.telemetry.room_seconds[int(Room_ID.FINAL_AREA)],
         game.telemetry.room_seconds[int(Room_ID.STORAGE)],

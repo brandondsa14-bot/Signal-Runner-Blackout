@@ -54,7 +54,7 @@ objective_description :: proc(id: Objective_ID) -> cstring {
     case .RECEPTION_POWER:
         return "Find the spare 20A fuse and repair the underground reception panel."
     case .SECURITY_ACCESS:
-        return "Use the shift note to enter the correct scanner-frequency sequence."
+        return "Search Security Control for the router procedure and handover clue, then enter the four-frequency sequence."
     case .ARCHIVE_RECORDS:
         return "Search the Records Archive for intake files connected to the disappearances."
     case .ARCHIVE_CODE:

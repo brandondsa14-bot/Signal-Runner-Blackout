@@ -392,3 +392,40 @@ Difficulty is shaped across five progression stages using external data:
 5. **Resolution — Final Investigation:** slight pressure reduction so evidence synthesis and story resolution remain readable.
 
 The BEFORE profile uses flat `1.0` stage scaling. The AFTER candidate curve is `0.75 -> 0.88 -> 1.00 -> 1.12 -> 1.06`. Both profiles are external JSON and retain identical gameplay content/rules.
+
+---
+
+## Current Implementation Addendum — Investigation Quality Pass (Nov 20, 2026)
+
+The original CP2 scope-lock section above is retained as historical checkpoint documentation. The current game has since evolved through later checkpoint/approved iteration work into an investigative survival-horror structure.
+
+### Current core loop
+
+**Explore → investigate nearby objects → collect/corroborate evidence → solve scanner/item puzzles → unlock connected areas → survive/search/escape Clay Stalker encounters → transmit the final case.**
+
+### Current facility progression
+
+1. Cemetery Visitor Gate
+2. Underground Reception
+3. Security Control
+4. Records Archive / Medical Laboratory
+5. Detention Block D
+6. Maintenance / optional Hazardous Waste Processing
+7. Containment Wing C
+8. Final Investigation
+
+Supply Storage remains an optional breathing/evidence room.
+
+### Current Clay Stalker FSM
+
+`DORMANT → PATROL → SUSPICIOUS → INVESTIGATE → ALERT → CHASE → SEARCH → DISENGAGE`
+
+Authored navigation markers + steering remain the deliberate movement choice. The monster retains last-known-position information rather than continuously knowing the player's exact location.
+
+### Detective evidence structure
+
+Mandatory evidence establishes a reachable conclusion. Optional evidence provides stronger corroboration and more complete case-report wording, but never gates the mandatory ending.
+
+### Optional Processing puzzle
+
+The Processing side chamber uses existing scanner verbs instead of new jumping physics. BLUE vents the bridge system; YELLOW drives the service bridge. Its reward is optional case evidence tied to Mateo Ruiz.

@@ -1,0 +1,171 @@
+{
+  "spawns": [
+    {
+      "kind": "PLAYER",
+      "x": 930,
+      "y": 300,
+      "w": 32,
+      "h": 40
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 85,
+      "w": 1000,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 540,
+      "w": 1000,
+      "h": 25
+    },
+    {
+      "kind": "WALL",
+      "x": 50,
+      "y": 110,
+      "w": 25,
+      "h": 430
+    },
+    {
+      "kind": "WALL",
+      "x": 1025,
+      "y": 110,
+      "w": 25,
+      "h": 140
+    },
+    {
+      "kind": "WALL",
+      "x": 1025,
+      "y": 360,
+      "w": 25,
+      "h": 180
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 430,
+      "y": 120,
+      "w": 240,
+      "h": 150
+    },
+    {
+      "kind": "PROCESSING_BRIDGE_LOCK",
+      "x": 430,
+      "y": 270,
+      "w": 240,
+      "h": 100
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 430,
+      "y": 370,
+      "w": 240,
+      "h": 160
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 160,
+      "y": 145,
+      "w": 170,
+      "h": 100
+    },
+    {
+      "kind": "BLOCKER",
+      "x": 750,
+      "y": 145,
+      "w": 160,
+      "h": 90
+    },
+    {
+      "kind": "DOOR_TRIGGER",
+      "x": 1021,
+      "y": 250,
+      "w": 32,
+      "h": 110,
+      "target": "MAINTENANCE",
+      "target_x": 110,
+      "target_y": 310,
+      "interact": true
+    },
+    {
+      "kind": "PROCESSING_CONSOLE",
+      "x": 780,
+      "y": 255,
+      "w": 110,
+      "h": 70
+    },
+    {
+      "kind": "PROCESSING_EVIDENCE",
+      "x": 175,
+      "y": 300,
+      "w": 90,
+      "h": 48
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 180,
+      "y": 165,
+      "w": 125,
+      "h": 60,
+      "prop": "PROCESSING_TANK"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 760,
+      "y": 350,
+      "w": 100,
+      "h": 45,
+      "prop": "PROCESSING_MANIFEST"
+    },
+    {
+      "kind": "HIDE_SPOT",
+      "x": 900,
+      "y": 400,
+      "w": 70,
+      "h": 125
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 955,
+      "y": 300,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_ENTRY",
+      "x": 130,
+      "y": 310,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 800,
+      "y": 445,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 320,
+      "y": 440,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 760,
+      "y": 175,
+      "w": 1,
+      "h": 1
+    },
+    {
+      "kind": "MONSTER_SPAWN",
+      "x": 300,
+      "y": 300,
+      "w": 1,
+      "h": 1
+    }
+  ]
+}

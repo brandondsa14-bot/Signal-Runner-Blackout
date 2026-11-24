@@ -103,3 +103,22 @@ A safe optional room containing extra environmental notes and a damaged group ph
 ```
 
 The active route deliberately forms a partial loop rather than a straight sequence. Once access requirements are solved, Archive, Laboratory, Detention and Maintenance can be revisited to support backtracking and cross-room monster pursuit.
+
+## Optional branch — Hazardous Waste Processing (quality pass)
+
+After Maintenance Relay 3 is online, a side hatch opens into Hazardous Waste Processing. The room is optional and returns to Maintenance.
+
+Purpose:
+- reinforce scanner mastery without adding a new control scheme;
+- provide a dangerous Rising-Danger monster room between Maintenance and Containment;
+- reward investigation with the Relay 3 incident report corroborating Mateo Ruiz's fate.
+
+Puzzle flow:
+1. Inspect the service-bridge console / processing manifest.
+2. Submit BLUE to vent the conductive system.
+3. Submit YELLOW to engage the bridge drive.
+4. Cross the restored service bridge.
+5. Recover the optional incident report.
+6. Return to Maintenance and continue the mandatory route.
+
+Skipping this branch does not prevent Containment or the ending.

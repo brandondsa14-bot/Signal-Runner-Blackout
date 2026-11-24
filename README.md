@@ -365,3 +365,85 @@ The current narrative is documented in `docs/NARRATIVE_BIBLE.md`. The undergroun
 Environmental evidence is distributed through Reception, Archive, Laboratory, Detention, Maintenance, Storage, Containment, and Final Investigation so the final reveal is foreshadowed by earlier discoveries.
 
 CP5 telemetry metadata can be labelled externally with `telemetry_scenario` and `telemetry_conditions` in the active tuning JSON; these labels are written into every F9 CSV snapshot alongside the build ID and profile.
+
+---
+
+# 2026-11-20 Reliability / Investigation Quality Pass
+
+This section is the authoritative control and feature summary for the latest integrated source.
+
+## Current controls
+
+| Input | Action |
+|---|---|
+| `WASD` / Arrow Keys | Move the officer |
+| `E` | Use the currently selected nearby interactable / confirm interaction |
+| `Q` | Cycle overlapping nearby E-interaction targets |
+| `1` / `2` / `3` | Select RED / BLUE / YELLOW scanner frequency underground |
+| `F` | Scanner pulse |
+| `Tab` | Open Field Inventory |
+| `I` | Open Investigation Log in normal gameplay; exit Search / Item-Use UI while those modals are active |
+| `H` | Open step-by-step puzzle assistance when unlocked by the hint system |
+| `K` | Toggle automatic progressive hints |
+| `V` | Toggle reduced horror effects |
+| `F5` | Reload `data/tuning_active.json` for CP5 balancing without recompilation |
+| `F8` | Toggle collision / interaction diagnostics |
+| `F9` | Write a CP5 telemetry CSV snapshot |
+| `Esc` | Close the active modal, or return to title when no modal is active |
+
+### Reliable interactions
+
+The prompt and E action now use the same selected target. Range is calculated to the nearest point on an interactive object's bounds, so large drawers, notes and terminals no longer require the officer to stand near one specific coordinate. When multiple interactables overlap, `Q` cycles them.
+
+### Collision reliability
+
+The visible officer sprite is preserved, while navigation uses a lower-body collider. X/Y movement resolves independently for wall sliding, diagonal movement is normalized, and a small depenetration search protects room-entry/spawn positions from minor overlap softlocks. Walking animation advances only when actual displacement occurs.
+
+## Security Control teaching flow
+
+The Frequency Router does not reveal its answer automatically.
+
+1. Search the **Security Officer Desk**.
+2. Read **Frequency Router Instructions** to learn that `1=RED`, `2=BLUE`, `3=YELLOW`, then approach the router and press `E` to transmit one channel.
+3. Read the separate night-shift handover card to infer the required four-channel sequence.
+4. Correct inputs advance the visible accepted count; a mismatch explicitly reports a reset.
+5. The objective tracker and progressive hints respond to the exact step already completed.
+
+## Investigation / evidence
+
+Press `I` and switch between Objectives and Evidence. Important evidence has a stable ID, case association, discovery location, summary and mandatory/optional role. The four linked missing-person cases are corroborated through different rooms rather than resolved by one document.
+
+## Optional Hazardous Waste Processing area
+
+Maintenance now has an optional side chamber once Relay 3 is online. This is a top-down scanner puzzle rather than a platforming/jump system:
+
+- BLUE vents the hazardous service bridge system.
+- YELLOW engages the bridge drive.
+- Crossing the restored bridge leads to an optional Relay 3 incident report tied to Mateo Ruiz.
+- The area participates in monster pursuit, hints, minimap exploration and CP5 telemetry.
+- It is not required for the mandatory ending.
+
+## Debug / QA
+
+`F8` displays collision and interaction diagnostics. Use it to verify the lower-body collider, nearby target selection and authored collision geometry when investigating movement or E-interaction issues.
+
+For the full manual regression matrix, see `docs/REGRESSION_TEST_PLAN.md`.
+
+# 2026-11-23 — UI Readability / Unobstructed HUD / Environment Polish
+
+## Dedicated non-playfield HUD
+
+Normal gameplay keeps the original **1100×640 world coordinate space**, but the application window now includes a dedicated **160 px investigation HUD band above the gameplay viewport**. The Current Objective / Next Step panel and Facility Map render in this band, so they remain visible without covering the player, doors, clues, or room corners. Level coordinates, collision geometry, AI navigation markers, puzzle positions, and transitions are not rescaled.
+
+Mouse-driven inventory/search/item-use interfaces automatically convert screen-space mouse coordinates back into the gameplay UI coordinate space after the viewport offset.
+
+## Wrapped UI text
+
+`src/text_ui.odin` provides a reusable width-aware text renderer based on Raylib text measurement. It is used by search/container details, inventory descriptions, contextual item use, objective/next-step text, hint assistance, and custom investigation messages. Long text now wraps inside its panel rather than continuing past the right edge.
+
+## Environmental cohesion pass
+
+`src/facility_art.odin` adds room-specific, visual-only set dressing. These additions intentionally do **not** participate in collision or interaction, protecting authored movement lanes and puzzle access. The pass differentiates Reception, Security, Archive, Laboratory, Detention, Maintenance, Waste Processing, Containment, Final Investigation, Storage, and the Cemetery/Visitor Gate through appropriate abandoned-facility details.
+
+See `docs/UI_ENVIRONMENT_POLISH.md` and `docs/REGRESSION_TEST_PLAN.md` for the room-by-room breakdown and manual verification checklist.
+

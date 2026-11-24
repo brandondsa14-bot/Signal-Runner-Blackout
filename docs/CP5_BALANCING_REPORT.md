@@ -205,3 +205,19 @@ Each CSV snapshot also records:
 - external test-condition label (`telemetry_conditions`).
 
 The supplied BEFORE/AFTER profiles use `security_to_containment` and `manual_keyboard_mac` for the recommended CP5 comparison. These labels can be changed in the active JSON before a run without recompiling.
+
+---
+
+## Post-CP5 quality-pass compatibility note — Nov 20
+
+The reliability/AI quality pass introduces one additional externally loaded timing parameter:
+
+| Parameter | BEFORE | AFTER | Reason |
+|---|---:|---:|---|
+| `monster_investigate_seconds` | 2.6 s | 2.6 s | Supports the new SUSPICIOUS/INVESTIGATE behaviour without fabricating a new CP5 before/after difference. |
+
+Because the value is identical in the preserved comparison profiles, it does not alter the historical BEFORE-vs-AFTER balance claim. Room-stage multipliers still shape effective pressure.
+
+The optional Hazardous Waste Processing room is assigned to **Rising Danger** and uses the same external monster tuning helpers as other dangerous rooms. Telemetry now records Processing-room time, but optional evidence from that room is not required for the representative mandatory CP5 route.
+
+No human-playtest result is added by this quality pass. Any later change to the new investigation timing or Processing pressure should be entered in this report only after actual observed evidence is collected.

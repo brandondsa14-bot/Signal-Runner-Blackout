@@ -136,3 +136,27 @@ The earlier `data/tuning.json` is retained as a CP3 history/reference file.
 ## Narrative integration
 
 `docs/NARRATIVE_BIBLE.md` consolidates the existing mystery around St. Mercy Cemetery, Project Resonance, the four missing civilians, C-17/Elias Voss, Adrian Vale, and Leah Morrison's 2:14 AM call. Existing rooms are used for environmental storytelling rather than adding a disconnected narrative subsystem.
+
+## 2026-11-20 reliability / investigation quality pass
+
+See `docs/QUALITY_PASS_IMPLEMENTATION.md` for the full engineering rationale. In summary:
+
+- interaction targeting is now bounds-aware and nearest-target deterministic;
+- `Q` cycles overlapping E targets;
+- player and monster navigation use lower-body collision with wall sliding / overlap recovery;
+- Security teaching is moved into an investigable desk and no longer assumes the player already understands scanner submission;
+- environmental props are data-driven and use the same corrected interaction system;
+- evidence has stable IDs and separate missing-person case associations;
+- Clay Stalker now has explicit SUSPICIOUS / INVESTIGATE phases;
+- optional Waste Processing extends Maintenance with a scanner-operated bridge and non-mandatory Mateo evidence;
+- CP5 tuning profiles are preserved and Processing is included in telemetry.
+
+## 2026-11-23 UI / HUD / Environment polish
+
+- Added `src/text_ui.odin` for reusable width-aware text wrapping and PLAYING mouse-coordinate conversion.
+- Expanded the PLAYING window with a 160 px dedicated HUD band while preserving the original 1100×640 world coordinate space.
+- Moved Current Objective / Next Step and Facility Map into the dedicated band.
+- Integrated wrapping across search, inventory, item use, objectives, hints, and custom investigation messages.
+- Added visual-only room-specific programmer art throughout the facility; no new collision or level-data blockers were introduced.
+- Added regression coverage for text overflow, HUD obstruction, viewport-adjusted mouse input, and room navigation.
+

@@ -154,6 +154,7 @@ Container_ID :: enum {
     NONE,
     RECEPTION_DESK,
     RECEPTION_SUPPLY,
+    SECURITY_DESK,
     ARCHIVE_FILE_CABINET,
     MAINTENANCE_LOCKER,
     STORAGE_PERSONAL_LOCKER,
@@ -164,6 +165,7 @@ container_name :: proc(id: Container_ID) -> cstring {
     switch id {
     case .RECEPTION_DESK:        return "RECEPTION DESK DRAWER"
     case .RECEPTION_SUPPLY:      return "ELECTRICAL SUPPLY CABINET"
+    case .SECURITY_DESK:         return "SECURITY OFFICER DESK"
     case .ARCHIVE_FILE_CABINET:  return "ARCHIVE FILING CABINET"
     case .MAINTENANCE_LOCKER:    return "MAINTENANCE TOOL LOCKER"
     case .STORAGE_PERSONAL_LOCKER:return "PERSONAL-EFFECTS LOCKER"
@@ -176,6 +178,7 @@ container_intro :: proc(id: Container_ID) -> cstring {
     switch id {
     case .RECEPTION_DESK:         return "Looks like someone left this drawer unlocked. Let's see what's inside."
     case .RECEPTION_SUPPLY:       return "An electrical cabinet. The latch is stiff, but it opens."
+    case .SECURITY_DESK:          return "The security desk drawer is half open. Shift paperwork is still inside."
     case .ARCHIVE_FILE_CABINET:   return "Most of these folders were emptied in a hurry. A few things remain."
     case .MAINTENANCE_LOCKER:     return "Facility tools and scraps. Some of this may explain what happened here."
     case .STORAGE_PERSONAL_LOCKER:return "Personal effects were stored here before being routed to detention."
@@ -193,6 +196,9 @@ Search_Object_ID :: enum {
     REPLACEMENT_FUSE,
     ELECTRICAL_MEMO,
     DEAD_FLASHLIGHT,
+    SECURITY_ROUTER_INSTRUCTIONS,
+    SECURITY_SHIFT_SEQUENCE,
+    SECURITY_COFFEE_NOTE,
     ARCHIVE_CARBON_COPY,
     ARCHIVE_EVIDENCE_TAG,
     DAMAGED_CASSETTE,
@@ -229,6 +235,12 @@ search_object_def :: proc(id: Search_Object_ID) -> Search_Object_Def {
         return Search_Object_Def{"Electrical maintenance memo", "'Reception lighting bus: 20A ceramic only. Do not bridge the failed circuit.'", .NONE}
     case .DEAD_FLASHLIGHT:
         return Search_Object_Def{"Dead emergency flashlight", "The battery compartment is corroded white. It will not power on.", .NONE}
+    case .SECURITY_ROUTER_INSTRUCTIONS:
+        return Search_Object_Def{"Frequency Router instructions", "SECURITY OPERATIONS: Select 1=RED, 2=BLUE, 3=YELLOW. Approach the router and press E to transmit each channel individually. Four consecutive inputs are required; a mismatch resets the sequence.", .NONE}
+    case .SECURITY_SHIFT_SEQUENCE:
+        return Search_Object_Def{"Night-shift handover card", "Harrow's handwriting: 'Stabilize RED. Route BLUE. Confirm YELLOW. Seal on BLUE.' The four verbs are underlined twice.", .NONE}
+    case .SECURITY_COFFEE_NOTE:
+        return Search_Object_Def{"Coffee-stained sticky note", "'If the router starts chirping, stop hammering E. Pick the colour FIRST.' Somebody learned this the hard way.", .NONE}
     case .ARCHIVE_CARBON_COPY:
         return Search_Object_Def{"Carbon-copy request form", "A transfer request signed by Dr. Vale. Four civilian intake numbers are written in the margin.", .NONE}
     case .ARCHIVE_EVIDENCE_TAG:
@@ -266,6 +278,12 @@ container_slot_object :: proc(container: Container_ID, slot: int) -> (Search_Obj
         switch slot {
         case 0: return .ELECTRICAL_MEMO, true
         case 1: return .DEAD_FLASHLIGHT, true
+        }
+    case .SECURITY_DESK:
+        switch slot {
+        case 0: return .SECURITY_ROUTER_INSTRUCTIONS, true
+        case 1: return .SECURITY_SHIFT_SEQUENCE, true
+        case 2: return .SECURITY_COFFEE_NOTE, true
         }
     case .ARCHIVE_FILE_CABINET:
         switch slot {
@@ -341,6 +359,32 @@ select_next_index :: proc(cursor: ^int, count: int, delta: int) {
     if cursor^ >= count { cursor^ = 0 }
 }
 
+handle_search_object_progress :: proc(game: ^Game, object: Search_Object_ID) {
+    switch object {
+    case .SECURITY_ROUTER_INSTRUCTIONS:
+        game.security_instructions_read = true
+    case .SECURITY_SHIFT_SEQUENCE:
+        game.security_clue_read = true
+    case .SECURITY_COFFEE_NOTE:
+        // Flavor clue reinforces the control model without revealing the code.
+        game.security_instructions_read = true
+    case .ARCHIVE_CARBON_COPY:
+        game.case_lena_clue = true
+        evidence_add(game, .LENA_TRANSFER_FORM)
+    case .ARCHIVE_EVIDENCE_TAG:
+        game.case_mateo_clue = true
+        evidence_add(game, .MATEO_ROUTING_TAG)
+    case .DAMAGED_CASSETTE:
+        game.case_evan_clue = true
+        evidence_add(game, .EVAN_MICROCASSETTE)
+    case .STORAGE_PHOTO_COPY:
+        // A photocopy foreshadows the original photograph without confirming Leah's fate.
+    case .NONE, .OLD_BADGE, .ARCHIVE_BRASS_KEY, .TORN_EMPLOYEE_PHOTO, .EMPTY_AMMO_BOX,
+         .REPLACEMENT_FUSE, .ELECTRICAL_MEMO, .DEAD_FLASHLIGHT, .MAINT_GLOVES, .BENT_WRENCH,
+         .OLD_UTILITY_CARD, .STORAGE_WALLET, .STORAGE_LABEL, .COUNT:
+    }
+}
+
 update_search_interface :: proc(game: ^Game) {
     if !game.search_open { return }
 
@@ -364,7 +408,7 @@ update_search_interface :: proc(game: ^Game) {
 
     click_confirm := false
     if rl.IsMouseButtonPressed(.LEFT) {
-        mouse := rl.GetMousePosition()
+        mouse := playing_mouse_position()
         for i := 0; i < count; i += 1 {
             if rl.CheckCollisionPointRec(mouse, search_row_rect(i)) {
                 game.search_cursor = i
@@ -379,6 +423,7 @@ update_search_interface :: proc(game: ^Game) {
 
     confirm := rl.IsKeyPressed(.E) || rl.IsKeyPressed(.ENTER) || click_confirm
     if confirm {
+        handle_search_object_progress(game, object)
         def := search_object_def(object)
         if def.collect_item != .NONE {
             if inventory_has(game, def.collect_item) {
@@ -424,7 +469,7 @@ update_inventory_interface :: proc(game: ^Game) {
 
     click_select := false
     if rl.IsMouseButtonPressed(.LEFT) {
-        mouse := rl.GetMousePosition()
+        mouse := playing_mouse_position()
         for i := 0; i < count; i += 1 {
             if rl.CheckCollisionPointRec(mouse, inventory_slot_rect(i)) {
                 game.inventory_cursor = i
@@ -564,7 +609,7 @@ update_item_selector :: proc(game: ^Game) {
 
     click_use := false
     if rl.IsMouseButtonPressed(.LEFT) {
-        mouse := rl.GetMousePosition()
+        mouse := playing_mouse_position()
         start := 0
         if game.item_use_cursor >= 6 { start = game.item_use_cursor - 5 }
         visible := count - start

@@ -14,7 +14,7 @@ balance_stage_for_room :: proc(room: Room_ID) -> Balance_Stage {
         return .INTRODUCTION
     case .SECURITY, .ARCHIVE, .LABORATORY:
         return .INVESTIGATION
-    case .DETENTION, .MAINTENANCE, .STORAGE:
+    case .DETENTION, .MAINTENANCE, .PROCESSING, .STORAGE:
         return .RISING_DANGER
     case .CONTAINMENT:
         return .PEAK_TENSION
@@ -77,6 +77,10 @@ monster_alert_seconds_for_room :: proc(game: ^Game) -> f32 {
     scale := difficulty_scale_for_room(&game.tuning, game.room)
     if scale <= 0.01 { scale = 1.0 }
     return game.tuning.monster_alert_seconds / scale
+}
+
+monster_investigate_seconds_for_room :: proc(game: ^Game) -> f32 {
+    return game.tuning.monster_investigate_seconds * difficulty_scale_for_room(&game.tuning, game.room)
 }
 
 monster_lost_seconds_for_room :: proc(game: ^Game) -> f32 {

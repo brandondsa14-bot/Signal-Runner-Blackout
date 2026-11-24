@@ -156,6 +156,22 @@
       "h": 70,
       "container": "ARCHIVE_FILE_CABINET",
       "interact": true
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 190,
+      "y": 175,
+      "w": 80,
+      "h": 190,
+      "prop": "ARCHIVE_BOOKSHELF"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 525,
+      "y": 360,
+      "w": 52,
+      "h": 30,
+      "prop": "ARCHIVE_TYPEWRITER"
     }
   ]
 }

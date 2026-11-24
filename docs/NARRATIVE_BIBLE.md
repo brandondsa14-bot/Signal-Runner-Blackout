@@ -130,3 +130,29 @@ Narrative clues should:
 4. Never contradict the objective/puzzle dependencies.
 5. Avoid explaining C-17 completely before Containment.
 
+
+## Quality-pass case conclusions and corroboration
+
+The evidence system now treats the four civilians as separate investigative threads instead of one combined collectible.
+
+### Lena Park — reporter
+
+Lena followed shell-company records around Project Resonance and entered the cemetery with the group. Archive transfer paperwork shows Vale's staff confiscated her camera/notes and moved her into archive isolation. The final case report concludes that she died in the sealed service-shaft network during the facility blackout.
+
+### Mateo Ruiz — electrical contractor
+
+Mateo recognized abnormal power draw beneath St. Mercy and understood the Relay 3 infrastructure. Detention evidence shows he was forced into maintenance work. The optional Waste Processing incident report provides stronger corroboration: Mateo attempted to interrupt Resonance power and died in a Relay 3 arc-flash. Missing this optional document does not block the main ending; the mandatory case still establishes his detention and forced maintenance role.
+
+### Evan Cole — groundskeeper
+
+Evan discovered recently reopened cemetery service tunnels and recorded his concerns before meeting the others. The laboratory calibration recording identifies the groundskeeper as an unauthorized Project Resonance subject and records a fatal neural reaction. This connects an apparently mundane cemetery clue to the experimental wing.
+
+### Leah Morrison — EMT / caller
+
+Leah was detained with the group but survived Observation. A hidden maintenance radio and later mirror evidence establish that she reached the Marshall PD repeater at 2:14 AM and deliberately contacted the officer already assigned to the linked disappearances. The ending confirms Leah is recovered alive.
+
+## Optional Waste Processing lead
+
+The Maintenance side chamber provides a non-mandatory investigative detour. Its conductive-runoff service bridge requires BLUE ventilation followed by YELLOW drive engagement. The far-side Relay 3 incident report strengthens Mateo's case and explains why the maintenance network shows signs of deliberate sabotage.
+
+This optional lead is designed as corroboration, not a hidden mandatory key; the player cannot permanently lose the ability to finish the main investigation by skipping it.

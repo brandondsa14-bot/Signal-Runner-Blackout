@@ -8,22 +8,132 @@ distance_sq :: proc(a, b: rl.Vector2) -> f32 {
     return dx*dx + dy*dy
 }
 
+rect_center :: proc(rect: rl.Rectangle) -> rl.Vector2 {
+    return rl.Vector2{rect.x + rect.width * 0.5, rect.y + rect.height * 0.5}
+}
+
+closest_point_on_rect :: proc(point: rl.Vector2, rect: rl.Rectangle) -> rl.Vector2 {
+    x := point[0]
+    y := point[1]
+    if x < rect.x { x = rect.x }
+    if x > rect.x + rect.width { x = rect.x + rect.width }
+    if y < rect.y { y = rect.y }
+    if y > rect.y + rect.height { y = rect.y + rect.height }
+    return rl.Vector2{x, y}
+}
+
+player_interaction_point :: proc(game: ^Game) -> rl.Vector2 {
+    if game.player_index < 0 { return rl.Vector2{0, 0} }
+    return rect_center(entity_rect(&game.entities[game.player_index]))
+}
+
+interaction_distance_sq :: proc(game: ^Game, entity: ^Entity) -> f32 {
+    point := player_interaction_point(game)
+    nearest := closest_point_on_rect(point, entity_rect(entity))
+    return distance_sq(point, nearest)
+}
+
 near_entity :: proc(game: ^Game, entity: ^Entity) -> bool {
-    if game.player_index < 0 {
-        return false
-    }
-    player := &game.entities[game.player_index]
+    if game.player_index < 0 { return false }
     max_dist := game.tuning.interact_distance
-    return distance_sq(player.position, entity.position) <= max_dist*max_dist
+    return interaction_distance_sq(game, entity) <= max_dist*max_dist
 }
 
 scanner_near_entity :: proc(game: ^Game, entity: ^Entity) -> bool {
-    if game.player_index < 0 {
+    if game.player_index < 0 { return false }
+    point := player_interaction_point(game)
+    nearest := closest_point_on_rect(point, entity_rect(entity))
+    max_dist := game.tuning.scanner_range
+    return distance_sq(point, nearest) <= max_dist*max_dist
+}
+
+entity_accepts_e_interaction :: proc(game: ^Game, entity: ^Entity) -> bool {
+    #partial switch entity.kind {
+    case .FUSE_ITEM:
+        return !game.reception_fuse_collected
+    case .SCREWDRIVER_ITEM:
+        return !game.has_screwdriver
+    case .CELL_KEY_ITEM:
+        return !game.has_cell_key || !game.detention_locks_bypassed
+    case .ARCHIVE_RECORDS:
+        return true // remains inspectable after collection for narrative confirmation
+    case .LAB_AUDIO_LOG:
+        return true
+    case .MISSING_EFFECTS:
+        return true
+    case .PROCESSING_EVIDENCE:
+        return true
+    case .OPTIONAL_PHOTO:
+        return true
+    case .TERMINAL, .CEMETERY_DOOR, .GRAVE_CLUE, .DOOR_TRIGGER,
+         .POWER_PANEL, .SECURITY_CLUE, .SECURITY_CONSOLE,
+         .LAB_RECEIVER_A, .LAB_RECEIVER_B, .LAB_RECEIVER_C,
+         .MAINT_PANEL, .NOISE_PIPE, .PROCESSING_CONSOLE,
+         .CONTAINMENT_NODE_A, .CONTAINMENT_NODE_B, .CONTAINMENT_NODE_C, .EXPERIMENT_LOG, .FINAL_TERMINAL,
+         .OPTIONAL_NOTE, .HIDE_SPOT, .SEARCHABLE_CONTAINER, .INSPECTABLE_PROP:
+        return true
+    case:
         return false
     }
-    player := &game.entities[game.player_index]
-    max_dist := game.tuning.scanner_range
-    return distance_sq(player.position, entity.position) <= max_dist*max_dist
+}
+
+MAX_INTERACTION_CANDIDATES :: 16
+
+find_interaction_candidates :: proc(game: ^Game, indices: ^[MAX_INTERACTION_CANDIDATES]int, distances: ^[MAX_INTERACTION_CANDIDATES]f32) -> int {
+    count := 0
+    for i := 0; i < game.entity_count; i += 1 {
+        entity := &game.entities[i]
+        if !entity.active || entity.kind == .PLAYER || !entity_accepts_e_interaction(game, entity) || !near_entity(game, entity) {
+            continue
+        }
+        if count >= MAX_INTERACTION_CANDIDATES { break }
+
+        d2 := interaction_distance_sq(game, entity)
+        insert_at := count
+        for j := 0; j < count; j += 1 {
+            if d2 < distances[j] {
+                insert_at = j
+                break
+            }
+        }
+        if insert_at < count {
+            for j := count; j > insert_at; j -= 1 {
+                indices[j] = indices[j - 1]
+                distances[j] = distances[j - 1]
+            }
+        }
+        indices[insert_at] = i
+        distances[insert_at] = d2
+        count += 1
+    }
+    return count
+}
+
+refresh_interaction_target :: proc(game: ^Game) {
+    indices: [MAX_INTERACTION_CANDIDATES]int
+    distances: [MAX_INTERACTION_CANDIDATES]f32
+    count := find_interaction_candidates(game, &indices, &distances)
+    game.interaction_candidate_count = count
+
+    if count <= 0 {
+        game.interaction_target_index = -1
+        game.interaction_cycle = 0
+        return
+    }
+
+    if game.interaction_cycle < 0 { game.interaction_cycle = 0 }
+    if game.interaction_cycle >= count { game.interaction_cycle = 0 }
+    game.interaction_target_index = indices[game.interaction_cycle]
+}
+
+cycle_interaction_target :: proc(game: ^Game) {
+    refresh_interaction_target(game)
+    if game.interaction_candidate_count <= 1 { return }
+    game.interaction_cycle += 1
+    if game.interaction_cycle >= game.interaction_candidate_count {
+        game.interaction_cycle = 0
+    }
+    refresh_interaction_target(game)
 }
 
 scanner_mode_name :: proc(mode: Scanner_Mode) -> cstring {
@@ -70,6 +180,8 @@ can_enter_room :: proc(game: ^Game, target: Room_ID) -> bool {
         return game.security_keycard && game.archive_code_known && game.lab_alignment_solved
     case .MAINTENANCE:
         return game.maintenance_badge
+    case .PROCESSING:
+        return game.maintenance_online
     case .CONTAINMENT:
         return game.security_unlocked && game.lab_alignment_solved && game.maintenance_online
     case .FINAL_AREA:
@@ -100,6 +212,8 @@ show_door_requirement :: proc(game: ^Game, target: Room_ID) {
         show_message(game, 53)
     case .MAINTENANCE:
         show_message(game, 54)
+    case .PROCESSING:
+        show_message(game, 97)
     case .CONTAINMENT:
         show_message(game, 55)
     case .FINAL_AREA:
@@ -193,6 +307,33 @@ calibrate_lab_receiver :: proc(game: ^Game, kind: Entity_Kind) {
         game.lab_alignment_solved = true
         show_message(game, 33)
         rl.PlaySound(game.resources.pickup_sound)
+    }
+}
+
+processing_expected_mode :: proc(step: int) -> Scanner_Mode {
+    if step <= 0 { return .BLUE }
+    return .YELLOW
+}
+
+calibrate_processing_console :: proc(game: ^Game) {
+    if game.processing_bridge_extended {
+        show_message(game, 95)
+        return
+    }
+    expected := processing_expected_mode(game.processing_console_step)
+    if game.scanner_mode == expected {
+        game.processing_console_step += 1
+        rl.PlaySound(game.resources.scanner_success)
+        if game.processing_console_step >= 2 {
+            game.processing_bridge_extended = true
+            show_message(game, 93)
+        } else {
+            show_message(game, 92)
+        }
+    } else {
+        telemetry_record_wrong_submission(game)
+        show_message(game, 94)
+        rl.PlaySound(game.resources.scanner_fail)
     }
 }
 
@@ -320,6 +461,11 @@ handle_scanner_pulse :: proc(game: ^Game) {
                 rl.PlaySound(game.resources.scanner_fail)
             } else {
                 game.final_decrypted = true
+                // The final mirror correlates the mandatory exhibits with its sealed
+                // transfer logs. This confirms the call source without making an
+                // optional hidden item necessary for the main ending.
+                game.case_leah_clue = true
+                evidence_add(game, .LEAH_RADIO_LOG)
                 show_message(game, 48)
                 rl.PlaySound(game.resources.scanner_success)
             }
@@ -396,7 +542,8 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
         }
 
     case .FUSE_ITEM:
-        if !game.has_spare_fuse {
+        if !game.reception_fuse_collected {
+            game.reception_fuse_collected = true
             game.has_spare_fuse = true
             add_item_with_progress(game, .REPLACEMENT_FUSE)
             show_message(game, 20)
@@ -423,6 +570,8 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
         if !game.archive_records {
             game.archive_records = true
             add_item_with_progress(game, .ARCHIVE_RECORDS)
+            evidence_add(game, .INTAKE_RECORDS)
+            game.case_lena_clue = true
             show_message(game, 27)
             rl.PlaySound(game.resources.pickup_sound)
             set_checkpoint(game, .ARCHIVE)
@@ -432,6 +581,8 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
 
     case .LAB_AUDIO_LOG:
         game.lab_audio_log = true
+        evidence_add(game, .RESONANCE_RECORDING)
+        game.case_evan_clue = true
         show_message(game, 30)
 
     case .LAB_RECEIVER_A, .LAB_RECEIVER_B, .LAB_RECEIVER_C:
@@ -456,6 +607,8 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
             game.has_personal_effects = true
             game.maintenance_badge = true
             add_item_with_progress(game, .PERSONAL_EFFECTS)
+            evidence_add(game, .CELL04_EFFECTS)
+            game.case_mateo_clue = true
             add_item_with_progress(game, .MAINTENANCE_BADGE)
             show_message(game, 37)
             rl.PlaySound(game.resources.pickup_sound)
@@ -480,6 +633,20 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
         rl.PlaySound(game.resources.distant_metal)
         enemy_attract_to(game, entity.position, true)
 
+    case .PROCESSING_CONSOLE:
+        calibrate_processing_console(game)
+
+    case .PROCESSING_EVIDENCE:
+        if !game.processing_evidence {
+            game.processing_evidence = true
+            game.case_mateo_clue = true
+            evidence_add(game, .MATEO_RELAY_INCIDENT)
+            show_message(game, 96)
+            rl.PlaySound(game.resources.pickup_sound)
+        } else {
+            show_custom_message(game, "The Relay 3 incident report is already bagged as evidence.", "Mateo Ruiz's maintenance assignment is confirmed.")
+        }
+
     case .CONTAINMENT_NODE_A, .CONTAINMENT_NODE_B, .CONTAINMENT_NODE_C:
         calibrate_containment_node(game, entity.kind)
 
@@ -489,6 +656,7 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
         } else if !game.has_experiment_log {
             game.has_experiment_log = true
             add_item_with_progress(game, .EXPERIMENT_LOG)
+            evidence_add(game, .C17_EXPERIMENT_LOG)
             show_message(game, 45)
             rl.PlaySound(game.resources.pickup_sound)
         } else {
@@ -510,13 +678,21 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
 
     case .OPTIONAL_NOTE:
         switch game.room {
-        case .RECEPTION:   show_message(game, 74)
+        case .RECEPTION:
+            evidence_add(game, .ANNEX_OPERATIONS_NOTICE)
+            show_message(game, 74)
         case .ARCHIVE:     show_message(game, 75)
         case .LABORATORY:  show_message(game, 76)
-        case .DETENTION:   show_message(game, 77)
+        case .DETENTION:
+            game.case_leah_clue = true
+            evidence_add(game, .LEAH_RADIO_LOG)
+            show_message(game, 77)
         case .MAINTENANCE: show_message(game, 78)
+        case .PROCESSING:  show_custom_message(game, "HAZARDOUS WASTE: bridge actuator requires BLUE vent / YELLOW drive.", "A handwritten note: 'Mateo refused to restore Relay 3.'")
         case .STORAGE:     show_message(game, 79)
-        case .FINAL_AREA:  show_message(game, 80)
+        case .FINAL_AREA:
+            evidence_add(game, .VALE_PURGE_ORDER)
+            show_message(game, 80)
         case .ENTRANCE, .SECURITY, .CONTAINMENT: show_message(game, 49)
         }
 
@@ -524,17 +700,21 @@ handle_entity_interaction :: proc(game: ^Game, entity: ^Entity) {
         if !game.optional_photo {
             game.optional_photo = true
             add_item_with_progress(game, .GROUP_PHOTO)
+            evidence_add(game, .GROUP_PHOTO)
             show_message(game, 72)
             rl.PlaySound(game.resources.pickup_sound)
         } else {
             show_message(game, 73)
         }
 
+    case .INSPECTABLE_PROP:
+        handle_environment_prop(game, entity.prop_id, entity.position)
+
     case .HIDE_SPOT:
         handle_hide_spot(game, entity)
 
     case .PLAYER, .WALL, .BLOCKER, .SIGNAL_BARRIER, .MONSTER_SPAWN, .MONSTER_ENTRY, .SEARCHABLE_CONTAINER,
-         .LASER_BARRIER, .DETENTION_CONSOLE, .ARCHIVE_HIDDEN_CLUE,
+         .LASER_BARRIER, .DETENTION_CONSOLE, .ARCHIVE_HIDDEN_CLUE, .PROCESSING_BRIDGE_LOCK,
          .LIBRARY_TRIGGER, .SIDE_ROOM_TRIGGER, .DUNGEON_DOOR, .RETURN_TRIGGER,
          .LIBRARY_KEY_ITEM, .STAFF_LOCKER, .WARDEN_DESK, .ENDING_EXIT:
         // These use movement, rendering, or scanner-pulse logic instead of E.

@@ -11,6 +11,7 @@ Hint_Context :: enum {
     LABORATORY,
     DETENTION,
     MAINTENANCE,
+    PROCESSING,
     CONTAINMENT,
     FINAL_AREA,
     STORAGE,
@@ -37,6 +38,7 @@ hint_context_for_game :: proc(game: ^Game) -> Hint_Context {
     case .LABORATORY:   return .LABORATORY
     case .DETENTION:    return .DETENTION
     case .MAINTENANCE:  return .MAINTENANCE
+    case .PROCESSING:   return .PROCESSING
     case .CONTAINMENT:  return .CONTAINMENT
     case .FINAL_AREA:   return .FINAL_AREA
     case .STORAGE:      return .STORAGE
@@ -60,6 +62,7 @@ hint_progress_token :: proc(game: ^Game, ctx: Hint_Context) -> int {
         return token
     case .SECURITY:
         token := 0
+        if game.security_instructions_read { token += 5 }
         if game.security_clue_read { token += 10 }
         if game.security_router_seen { token += 20 }
         token += game.security_sequence_step
@@ -90,6 +93,11 @@ hint_progress_token :: proc(game: ^Game, ctx: Hint_Context) -> int {
         if game.maintenance_panel_open { token += 20 }
         if game.maintenance_online { token += 40 }
         return token
+    case .PROCESSING:
+        token := game.processing_console_step
+        if game.processing_bridge_extended { token += 20 }
+        if game.processing_evidence { token += 40 }
+        return token
     case .CONTAINMENT:
         token := 0
         if game.containment_node_a { token += 1 }
@@ -118,7 +126,8 @@ hint_system_paused :: proc(game: ^Game) -> bool {
     if game.state != .PLAYING { return true }
     if game.search_open || game.item_use_open || game.inventory_open || game.objectives_open || game.hint_solution_open { return true }
     if game.message_timer > 0 { return true }
-    if game.enemy.state == .ALERT || game.enemy.state == .CHASE || game.enemy.state == .SEARCH { return true }
+    if game.enemy.state == .SUSPICIOUS || game.enemy.state == .INVESTIGATE ||
+       game.enemy.state == .ALERT || game.enemy.state == .CHASE || game.enemy.state == .SEARCH { return true }
     return false
 }
 
@@ -178,7 +187,8 @@ contextual_next_step :: proc(game: ^Game) -> cstring {
         return "Enter Security Control and inspect the frequency system."
     case .SECURITY:
         if game.security_unlocked { return "The east laser grid is down. Follow the open route toward the laboratory." }
-        if !game.security_clue_read { return "Examine the Shift Note beside the Frequency Router." }
+        if !game.security_instructions_read { return "Search the Security Officer desk drawer for the router operating instructions." }
+        if !game.security_clue_read { return "Inspect the night-shift handover card in the same drawer for the four-signal order." }
         if !game.security_router_seen { return "Approach the Frequency Router and press E to inspect its controls." }
         if game.security_sequence_step <= 0 { return "Choose a scanner colour with 1/2/3, then press E at the router." }
         return "Continue entering the sequence; the green dots show accepted signals."
@@ -199,7 +209,14 @@ contextual_next_step :: proc(game: ^Game) -> cstring {
         if !game.has_screwdriver { return "Search maintenance storage for a tool that can open Relay Panel 3." }
         if !game.maintenance_panel_open { return "Use the screwdriver on Relay Panel 3." }
         if !game.maintenance_online { return "Scan the opened relay using the frequency indicated by maintenance notes." }
-        return "Relay 3 is online. Proceed toward Containment Wing C."
+        return "Relay 3 is online. Containment is available; the west hatch is an optional waste-processing lead."
+    case .PROCESSING:
+        if !game.processing_bridge_extended {
+            if game.processing_console_step <= 0 { return "Read the processing manifest, select BLUE, then submit it at the bridge console." }
+            return "Pressure is vented. Select YELLOW and submit it at the bridge console."
+        }
+        if !game.processing_evidence { return "Cross the extended service bridge and recover the sealed incident report." }
+        return "Optional lead secured. Return to Maintenance and continue toward Containment."
     case .CONTAINMENT:
         if !game.containment_solved { return "Calibrate all three containment nodes while avoiding C-17." }
         if !game.has_experiment_log { return "Recover the released C-17 experiment log." }
@@ -229,7 +246,8 @@ hint_line_1 :: proc(game: ^Game, ctx: Hint_Context, stage: int) -> cstring {
     switch ctx {
     case .SECURITY:
         if game.security_unlocked { return "The security lock is disabled." }
-        if !game.security_clue_read { return "That Shift Note probably explains the router." }
+        if !game.security_instructions_read { return "The security desk should contain operating instructions for the router." }
+        if !game.security_clue_read { return "The handover card in that drawer should contain the actual colour order." }
         if !game.security_router_seen { return "The note describes colours. The router must accept them." }
         if game.security_sequence_step > 0 { return security_remaining_hint(game) }
         if stage <= 1 { return "The router responds to scanner colours." }
@@ -254,6 +272,13 @@ hint_line_1 :: proc(game: ^Game, ctx: Hint_Context, stage: int) -> cstring {
         if !game.has_screwdriver { return "Relay Panel 3 is physically sealed. I need a proper hand tool." }
         if !game.maintenance_panel_open { return "I already have a screwdriver that should fit the relay cover." }
         return "The opened relay responds to a scanner carrier described in the maintenance notes."
+    case .PROCESSING:
+        if !game.processing_bridge_extended {
+            if game.processing_console_step <= 0 { return "The manifest says the waste chamber must vent pressure before the bridge can move." }
+            return "The pressure cycle is complete. The bridge drive still needs a carrier."
+        }
+        if !game.processing_evidence { return "The bridge is stable now. The sealed locker is on the far side." }
+        return "This optional lead is complete. I can return to the main investigation."
     case .CONTAINMENT:
         if !game.containment_solved { return "The containment nodes are separate parts of one calibration system." }
         return "The archive drawer released when the nodes synchronized."
@@ -276,7 +301,8 @@ hint_line_2 :: proc(game: ^Game, ctx: Hint_Context, stage: int) -> cstring {
     if stage >= 4 { return "Need more help? Press H for step-by-step assistance." }
     switch ctx {
     case .SECURITY:
-        if !game.security_clue_read { return "Look beside the Frequency Router and press E to read it." }
+        if !game.security_instructions_read { return "Approach the Security Officer desk and press E to search its drawer." }
+        if !game.security_clue_read { return "Inspect the night-shift handover card inside the desk drawer." }
         if !game.security_router_seen { return "Approach the Frequency Router and press E once to inspect it." }
         return "The sequence only advances when the current scanner colour is accepted."
     case .RECEPTION:
@@ -289,6 +315,10 @@ hint_line_2 :: proc(game: ^Game, ctx: Hint_Context, stage: int) -> cstring {
         return "Check earlier evidence, your inventory, and the scanner carrier before retrying."
     case .MAINTENANCE:
         return "Use a physical tool first, then the scanner after the panel is open."
+    case .PROCESSING:
+        if game.processing_console_step <= 0 { return "BLUE vents the conductive runoff pressure; submit it with E at the console." }
+        if !game.processing_bridge_extended { return "YELLOW powers the bridge actuator; submit it with E at the console." }
+        return "The optional incident report is across the service bridge."
     case .CONTAINMENT:
         return "Progress persists between nodes, so create distance from C-17 before calibrating."
     case .FINAL_AREA:
@@ -310,24 +340,26 @@ draw_hint_notification :: proc(game: ^Game) {
 
     x: i32 = 14
     y: i32 = 196
-    w: i32 = 470
-    h: i32 = 68
+    w: i32 = 500
+    h: i32 = 92
     rl.DrawRectangle(x, y, w, h, rl.Color{10, 9, 9, 238})
     rl.DrawRectangleLines(x, y, w, h, rl.Color{105, 78, 48, 255})
     rl.DrawText("OFFICER'S THOUGHT", x + 12, y + 8, 11, rl.Color{170, 132, 74, 255})
-    rl.DrawText(hint_line_1(game, ctx, game.hint_notification_stage), x + 12, y + 27, 10, rl.RAYWHITE)
-    rl.DrawText(hint_line_2(game, ctx, game.hint_notification_stage), x + 12, y + 45, 9, rl.Color{149, 143, 131, 255})
+    draw_text_wrapped(hint_line_1(game, ctx, game.hint_notification_stage), x + 12, y + 27, w - 24, 10, 13, rl.RAYWHITE, 2)
+    draw_text_wrapped(hint_line_2(game, ctx, game.hint_notification_stage), x + 12, y + 56, w - 24, 9, 12, rl.Color{149, 143, 131, 255}, 2)
 }
 
 draw_security_solution :: proc(game: ^Game, x, y: i32) {
     rl.DrawText("STEP-BY-STEP — SECURITY FREQUENCY ROUTER", x, y, 18, rl.GOLD)
-    if !game.security_clue_read {
-        rl.DrawText("1. Read the Shift Note beside the router with E.", x, y + 34, 14, rl.RAYWHITE)
+    if !game.security_instructions_read {
+        draw_text_wrapped("1. Search the Security Officer desk and inspect the router instructions.", x, y + 34, 760, 14, 18, rl.RAYWHITE, 2)
+    } else if !game.security_clue_read {
+        draw_text_wrapped("1. Inspect the night-shift handover card in the same drawer.", x, y + 34, 760, 14, 18, rl.RAYWHITE, 2)
     } else {
-        rl.DrawText("1. Shift Note read.", x, y + 34, 14, rl.GREEN)
+        rl.DrawText("1. Router procedure and shift sequence recovered.", x, y + 34, 14, rl.GREEN)
     }
     rl.DrawText("2. Use 1 / 2 / 3 to choose RED, BLUE or YELLOW.", x, y + 62, 14, rl.RAYWHITE)
-    rl.DrawText("3. Stand at the Frequency Router and press E to submit the selected colour.", x, y + 90, 14, rl.RAYWHITE)
+    draw_text_wrapped("3. Stand at the Frequency Router and press E to submit the selected colour.", x, y + 90, 760, 14, 18, rl.RAYWHITE, 2)
     rl.DrawText("4. Accepted entries remain lit in the sequence indicator.", x, y + 118, 14, rl.RAYWHITE)
     rl.DrawText("Implemented router sequence:", x, y + 158, 13, rl.Color{153, 144, 127, 255})
 
@@ -344,7 +376,7 @@ draw_security_solution :: proc(game: ^Game, x, y: i32) {
         rl.DrawText(security_remaining_hint(game), x, y + 244, 13, rl.SKYBLUE)
     }
     if game.security_unlocked {
-        rl.DrawText("The laser grid is already disabled. Use the east passage toward the laboratory.", x, y + 244, 13, rl.GREEN)
+        draw_text_wrapped("The laser grid is already disabled. Use the east passage toward the laboratory.", x, y + 244, 760, 13, 17, rl.GREEN, 2)
     }
 }
 
@@ -360,9 +392,9 @@ draw_hint_solution_overlay :: proc(game: ^Game) {
         draw_security_solution(game, 155, 155)
     } else {
         rl.DrawText("CURRENT NEXT STEP", 155, 165, 15, rl.GOLD)
-        rl.DrawText(contextual_next_step(game), 155, 198, 14, rl.RAYWHITE)
-        rl.DrawText("This assistance is derived from the current puzzle state and collected evidence.", 155, 245, 12, rl.GRAY)
-        rl.DrawText("Automatic hints pause during menus, dialogue and Clay Stalker pursuit.", 155, 275, 12, rl.GRAY)
-        rl.DrawText("Press K during gameplay to enable or disable automatic hints.", 155, 305, 12, rl.Color{145, 132, 105, 255})
+        draw_text_wrapped(contextual_next_step(game), 155, 198, 780, 14, 18, rl.RAYWHITE, 3)
+        draw_text_wrapped("This assistance is derived from the current puzzle state and collected evidence.", 155, 255, 780, 12, 16, rl.GRAY, 2)
+        draw_text_wrapped("Automatic hints pause during menus, dialogue and Clay Stalker pursuit.", 155, 291, 780, 12, 16, rl.GRAY, 2)
+        draw_text_wrapped("Press K during gameplay to enable or disable automatic hints.", 155, 327, 780, 12, 16, rl.Color{145, 132, 105, 255}, 2)
     }
 }

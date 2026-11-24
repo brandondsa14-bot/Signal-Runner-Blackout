@@ -182,6 +182,30 @@
       "y": 290,
       "w": 1,
       "h": 1
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 700,
+      "y": 175,
+      "w": 62,
+      "h": 38,
+      "prop": "DETENTION_SCRATCHES"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 865,
+      "y": 180,
+      "w": 46,
+      "h": 30,
+      "prop": "DETENTION_SINK"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 180,
+      "y": 175,
+      "w": 44,
+      "h": 48,
+      "prop": "DETENTION_TOILET"
     }
   ]
 }

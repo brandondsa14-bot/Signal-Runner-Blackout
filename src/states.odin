@@ -9,7 +9,7 @@ Game_State :: enum {
     ENDING,
 }
 
-ROOM_COUNT :: 10
+ROOM_COUNT :: 11
 
 Room_ID :: enum {
     ENTRANCE,
@@ -19,6 +19,7 @@ Room_ID :: enum {
     LABORATORY,
     DETENTION,
     MAINTENANCE,
+    PROCESSING,
     CONTAINMENT,
     FINAL_AREA,
     STORAGE,
@@ -40,6 +41,8 @@ Scanner_Mode :: enum {
 Enemy_State :: enum {
     DORMANT,
     PATROL,
+    SUSPICIOUS,
+    INVESTIGATE,
     ALERT,
     CHASE,
     SEARCH,

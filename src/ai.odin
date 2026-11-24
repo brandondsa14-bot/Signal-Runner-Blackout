@@ -22,7 +22,7 @@ Enemy_AI :: struct {
 room_allows_monster :: proc(room: Room_ID) -> bool {
     // Reception/archive/storage are deliberate breathing rooms for puzzle solving.
     return room == .SECURITY || room == .LABORATORY || room == .DETENTION ||
-           room == .MAINTENANCE || room == .CONTAINMENT
+           room == .MAINTENANCE || room == .PROCESSING || room == .CONTAINMENT
 }
 
 random_respawn_delay :: proc(game: ^Game) -> f32 {
@@ -206,17 +206,21 @@ spawn_enemy_patrol :: proc(game: ^Game) {
     game.enemy.active = true
     game.enemy.room = game.room
     game.enemy.forced_event = false
+    _ = resolve_enemy_overlap(game)
     enemy_set_state(game, .PATROL)
 }
 
 spawn_enemy_from_door :: proc(game: ^Game) {
     game.enemy.position = choose_entry_marker(game)
-    game.enemy.last_seen = game.entities[game.player_index].position
+    // The monster remembers the doorway/entry point the player used, not the
+    // player's current exact position. It must reacquire visually after entering.
+    game.enemy.last_seen = game.enemy.cross_room_entry
     game.enemy.active = true
     game.enemy.room = game.room
     game.enemy.cross_room_pending = false
-    enemy_set_state(game, .ALERT)
-    game.enemy.state_timer = monster_alert_seconds_for_room(game)
+    _ = resolve_enemy_overlap(game)
+    enemy_set_state(game, .INVESTIGATE)
+    game.enemy.state_timer = monster_investigate_seconds_for_room(game)
 }
 
 enemy_rect :: proc(game: ^Game) -> rl.Rectangle {
@@ -227,6 +231,8 @@ entity_solid_for_enemy :: proc(game: ^Game, entity: ^Entity) -> bool {
     #partial switch entity.kind {
     case .WALL, .BLOCKER, .HIDE_SPOT, .DOOR_TRIGGER, .SEARCHABLE_CONTAINER:
         return true
+    case .PROCESSING_BRIDGE_LOCK:
+        return !game.processing_bridge_extended
     case .SIGNAL_BARRIER:
         return !game.red_signal_on
     case .CEMETERY_DOOR:
@@ -286,8 +292,15 @@ seek_velocity :: proc(from, to: rl.Vector2, speed: f32) -> rl.Vector2 {
     return rl.Vector2{direction[0] * speed, direction[1] * speed}
 }
 
-enemy_collides_world :: proc(game: ^Game) -> bool {
-    rect := enemy_rect(game)
+enemy_world_rect_at :: proc(position: rl.Vector2) -> rl.Rectangle {
+    // Use the Stalker's lower body for navigation collisions. Its full 42x54
+    // sprite remains available for capture/contact checks, but shoulders/head no
+    // longer snag on furniture corners or narrow door geometry.
+    return rl.Rectangle{x=position[0] + 5, y=position[1] + 12, width=32, height=40}
+}
+
+enemy_world_collides_at :: proc(game: ^Game, position: rl.Vector2) -> bool {
+    rect := enemy_world_rect_at(position)
     for i := 0; i < game.entity_count; i += 1 {
         entity := &game.entities[i]
         if !entity.active || !entity_solid_for_enemy(game, entity) {
@@ -300,17 +313,43 @@ enemy_collides_world :: proc(game: ^Game) -> bool {
     return false
 }
 
+resolve_enemy_overlap :: proc(game: ^Game) -> bool {
+    if !enemy_world_collides_at(game, game.enemy.position) { return true }
+
+    origin := game.enemy.position
+    for radius: i32 = 1; radius <= 24; radius += 1 {
+        r := f32(radius)
+        candidates := [8]rl.Vector2{
+            rl.Vector2{origin[0] + r, origin[1]}, rl.Vector2{origin[0] - r, origin[1]},
+            rl.Vector2{origin[0], origin[1] + r}, rl.Vector2{origin[0], origin[1] - r},
+            rl.Vector2{origin[0] + r, origin[1] + r}, rl.Vector2{origin[0] - r, origin[1] + r},
+            rl.Vector2{origin[0] + r, origin[1] - r}, rl.Vector2{origin[0] - r, origin[1] - r},
+        }
+        for candidate in candidates {
+            if !enemy_world_collides_at(game, candidate) {
+                game.enemy.position = candidate
+                return true
+            }
+        }
+    }
+    game.enemy.position = origin
+    return false
+}
+
 enemy_move_with_collision :: proc(game: ^Game, velocity: rl.Vector2, dt: f32) {
-    old_x := game.enemy.position[0]
-    game.enemy.position[0] += velocity[0] * dt
-    if enemy_collides_world(game) {
-        game.enemy.position[0] = old_x
+    // Axis-separated movement gives natural wall sliding. A small overlap
+    // recovery protects authored spawn/door markers from rounding or edge-touch
+    // softlocks without teleporting the enemy toward the player.
+    _ = resolve_enemy_overlap(game)
+
+    next_x := rl.Vector2{game.enemy.position[0] + velocity[0] * dt, game.enemy.position[1]}
+    if !enemy_world_collides_at(game, next_x) {
+        game.enemy.position = next_x
     }
 
-    old_y := game.enemy.position[1]
-    game.enemy.position[1] += velocity[1] * dt
-    if enemy_collides_world(game) {
-        game.enemy.position[1] = old_y
+    next_y := rl.Vector2{game.enemy.position[0], game.enemy.position[1] + velocity[1] * dt}
+    if !enemy_world_collides_at(game, next_y) {
+        game.enemy.position = next_y
     }
 }
 
@@ -354,8 +393,9 @@ enemy_attract_to :: proc(game: ^Game, position: rl.Vector2, strong: bool) {
         return
     }
 
-    // Active monsters only react to sound inside their externally tuned hearing
-    // radius. Scripted strong events may still spawn a dormant monster nearby.
+    // Sound is information, not omniscience: the Stalker only receives the
+    // source position when the event falls inside its externally tuned hearing
+    // radius. Strong scripted noises may awaken a dormant monster nearby.
     if game.enemy.active {
         hearing := monster_hearing_range_for_room(game)
         if distance_sq(game.enemy.position, position) > hearing*hearing {
@@ -370,16 +410,16 @@ enemy_attract_to :: proc(game: ^Game, position: rl.Vector2, strong: bool) {
             game.enemy.room = game.room
             game.enemy.last_seen = position
             game.enemy.forced_event = true
-            enemy_set_state(game, .ALERT)
-            game.enemy.state_timer = monster_alert_seconds_for_room(game) * 1.25
+            enemy_set_state(game, .SUSPICIOUS)
+            game.enemy.state_timer = monster_alert_seconds_for_room(game) * 1.15
         }
         return
     }
 
     if game.enemy.state != .CHASE {
         game.enemy.last_seen = position
-        enemy_set_state(game, .SEARCH)
-        game.enemy.state_timer = monster_search_seconds_for_room(game)
+        enemy_set_state(game, .INVESTIGATE)
+        game.enemy.state_timer = monster_investigate_seconds_for_room(game)
     }
 }
 
@@ -423,7 +463,7 @@ update_enemy_ai :: proc(game: ^Game, dt: f32) {
 
         if enemy_can_see_player(game) {
             game.enemy.last_seen = player.position
-            enemy_set_state(game, .ALERT)
+            enemy_set_state(game, .SUSPICIOUS)
             game.enemy.state_timer = monster_alert_seconds_for_room(game)
             return
         }
@@ -435,16 +475,52 @@ update_enemy_ai :: proc(game: ^Game, dt: f32) {
         game.enemy.velocity = velocity
         enemy_move_with_collision(game, velocity, dt)
 
-    case .ALERT:
-        if !game.enemy.active {
-            return
-        }
-        game.enemy.state_timer -= dt
+    case .SUSPICIOUS:
+        // A brief confirmation window gives the player readable reaction time. If
+        // line of sight breaks here, the monster investigates the last position
+        // instead of magically knowing where the player went.
         if enemy_can_see_player(game) {
             game.enemy.last_seen = player.position
+            game.enemy.state_timer -= dt
+            if game.enemy.state_timer <= 0 {
+                enemy_set_state(game, .ALERT)
+                game.enemy.state_timer = monster_alert_seconds_for_room(game) * 0.40
+            }
+        } else {
+            enemy_set_state(game, .INVESTIGATE)
+            game.enemy.state_timer = monster_investigate_seconds_for_room(game)
         }
-        if game.enemy.state_timer <= 0 {
-            enemy_set_state(game, .CHASE)
+
+    case .INVESTIGATE:
+        if enemy_can_see_player(game) {
+            game.enemy.last_seen = player.position
+            enemy_set_state(game, .SUSPICIOUS)
+            game.enemy.state_timer = monster_alert_seconds_for_room(game) * 0.65
+            return
+        }
+
+        game.enemy.state_timer -= dt
+        velocity := enemy_velocity_to_target(game, game.enemy.last_seen, monster_patrol_speed_for_room(game) * 1.20)
+        game.enemy.velocity = velocity
+        enemy_move_with_collision(game, velocity, dt)
+
+        reached := distance_sq(game.enemy.position, game.enemy.last_seen) < 34*34
+        if reached || game.enemy.state_timer <= 0 {
+            enemy_set_state(game, .SEARCH)
+            game.enemy.state_timer = monster_search_seconds_for_room(game)
+        }
+
+    case .ALERT:
+        if !game.enemy.active { return }
+        if enemy_can_see_player(game) {
+            game.enemy.last_seen = player.position
+            game.enemy.state_timer -= dt
+            if game.enemy.state_timer <= 0 {
+                enemy_set_state(game, .CHASE)
+            }
+        } else {
+            enemy_set_state(game, .INVESTIGATE)
+            game.enemy.state_timer = monster_investigate_seconds_for_room(game)
         }
 
     case .CHASE:
@@ -461,20 +537,20 @@ update_enemy_ai :: proc(game: ^Game, dt: f32) {
         enemy_move_with_collision(game, velocity, dt)
 
         if game.enemy.lose_timer >= monster_lost_seconds_for_room(game) {
-            enemy_set_state(game, .SEARCH)
-            game.enemy.state_timer = monster_search_seconds_for_room(game)
+            enemy_set_state(game, .INVESTIGATE)
+            game.enemy.state_timer = monster_investigate_seconds_for_room(game)
         }
 
     case .SEARCH:
         if enemy_can_see_player(game) {
             game.enemy.last_seen = player.position
-            enemy_set_state(game, .ALERT)
-            game.enemy.state_timer = monster_alert_seconds_for_room(game) * 0.65
+            enemy_set_state(game, .SUSPICIOUS)
+            game.enemy.state_timer = monster_alert_seconds_for_room(game) * 0.55
             return
         }
 
         game.enemy.state_timer -= dt
-        velocity := enemy_velocity_to_target(game, game.enemy.last_seen, monster_patrol_speed_for_room(game) * 1.15)
+        velocity := enemy_velocity_to_target(game, game.enemy.last_seen, monster_patrol_speed_for_room(game) * 1.08)
         game.enemy.velocity = velocity
         enemy_move_with_collision(game, velocity, dt)
 
@@ -487,7 +563,7 @@ update_enemy_ai :: proc(game: ^Game, dt: f32) {
     case .DISENGAGE:
         if enemy_can_see_player(game) {
             game.enemy.last_seen = player.position
-            enemy_set_state(game, .ALERT)
+            enemy_set_state(game, .SUSPICIOUS)
             game.enemy.state_timer = monster_alert_seconds_for_room(game)
             return
         }
@@ -510,3 +586,4 @@ update_enemy_ai :: proc(game: ^Game, dt: f32) {
         begin_jumpscare(game)
     }
 }
+

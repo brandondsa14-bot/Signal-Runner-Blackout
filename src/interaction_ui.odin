@@ -14,7 +14,7 @@ inventory_slot_rect :: proc(index: int) -> rl.Rectangle {
 }
 
 search_row_rect :: proc(index: int) -> rl.Rectangle {
-    return rl.Rectangle{x=150, y=f32(210 + index*58), width=330, height=50}
+    return rl.Rectangle{x=150, y=f32(220 + index*58), width=330, height=50}
 }
 
 item_use_row_rect :: proc(index: int) -> rl.Rectangle {
@@ -120,8 +120,8 @@ draw_inventory_overlay :: proc(game: ^Game) {
         rl.DrawRectangle(125, 463, 850, 82, rl.Color{13, 12, 11, 255})
         rl.DrawRectangleLines(125, 463, 850, 82, rl.Color{62, 55, 45, 255})
         rl.DrawText(def.name, 145, 476, 16, rl.GOLD)
-        rl.DrawText(def.description, 145, 500, 12, rl.LIGHTGRAY)
-        rl.DrawText(def.use_text, 145, 524, 10, rl.Color{136, 126, 106, 255})
+        draw_text_wrapped(def.description, 145, 499, 810, 11, 13, rl.LIGHTGRAY, 2)
+        draw_text_wrapped(def.use_text, 145, 526, 810, 9, 11, rl.Color{136, 126, 106, 255}, 1)
     }
 }
 
@@ -130,8 +130,8 @@ draw_search_overlay :: proc(game: ^Game) {
     rl.DrawRectangleLines(105, 80, 890, 480, rl.Color{94, 77, 56, 255})
     rl.DrawText("INVESTIGATION SEARCH", 145, 108, 23, rl.Color{201, 187, 157, 255})
     rl.DrawText(container_name(game.active_container), 145, 140, 14, rl.Color{150, 125, 80, 255})
-    rl.DrawText(container_intro(game.active_container), 145, 162, 11, rl.LIGHTGRAY)
-    rl.DrawText("WHEEL / W-S — SELECT     E — PICK UP / INSPECT     I / ESC — LEAVE", 145, 181, 10, rl.GRAY)
+    draw_text_wrapped(container_intro(game.active_container), 145, 161, 680, 10, 13, rl.LIGHTGRAY, 2)
+    rl.DrawText("WHEEL / W-S — SELECT     E — PICK UP / INSPECT     I / ESC — LEAVE", 145, 193, 10, rl.GRAY)
     draw_modal_exit_hint("EXIT SEARCH")
 
     count := container_visible_count(game, game.active_container)
@@ -160,17 +160,17 @@ draw_search_overlay :: proc(game: ^Game) {
     obj, found := container_object_at(game, game.active_container, game.search_cursor)
     if found {
         def := search_object_def(obj)
-        rl.DrawRectangle(520, 210, 430, 245, rl.Color{13, 12, 11, 255})
-        rl.DrawRectangleLines(520, 210, 430, 245, rl.Color{61, 54, 44, 255})
-        rl.DrawText(def.name, 545, 234, 18, rl.GOLD)
-        rl.DrawText(def.description, 545, 270, 10, rl.LIGHTGRAY)
+        rl.DrawRectangle(520, 220, 430, 245, rl.Color{13, 12, 11, 255})
+        rl.DrawRectangleLines(520, 220, 430, 245, rl.Color{61, 54, 44, 255})
+        draw_text_wrapped(def.name, 545, 242, 380, 18, 20, rl.GOLD, 2)
+        draw_text_wrapped(def.description, 545, 282, 380, 10, 14, rl.LIGHTGRAY, 5)
         if def.collect_item != .NONE {
             item := item_def(def.collect_item)
-            rl.DrawText("[E] PICK UP", 545, 362, 14, rl.GREEN)
-            rl.DrawText(item_class_name(item.class), 545, 390, 11, rl.Color{146, 121, 79, 255})
+            rl.DrawText("[E] PICK UP", 545, 372, 14, rl.GREEN)
+            rl.DrawText(item_class_name(item.class), 545, 400, 11, rl.Color{146, 121, 79, 255})
         } else {
-            rl.DrawText("[E] INSPECT", 545, 362, 14, rl.Color{164, 144, 104, 255})
-            rl.DrawText("Not useful as a carried item.", 545, 390, 11, rl.GRAY)
+            rl.DrawText("[E] INSPECT", 545, 372, 14, rl.Color{164, 144, 104, 255})
+            rl.DrawText("Not useful as a carried item.", 545, 400, 11, rl.GRAY)
         }
     }
 
@@ -195,8 +195,8 @@ draw_item_use_overlay :: proc(game: ^Game) {
     rl.DrawRectangleLines(130, 90, 840, 455, rl.Color{98, 78, 54, 255})
     rl.DrawText("SELECT ITEM", 170, 118, 24, rl.Color{204, 190, 160, 255})
     draw_modal_exit_hint("EXIT")
-    rl.DrawText(item_use_context(game), 170, 151, 12, rl.LIGHTGRAY)
-    rl.DrawText("Wrong items are never consumed.", 170, 172, 10, rl.GRAY)
+    draw_text_wrapped(item_use_context(game), 170, 151, 620, 11, 14, rl.LIGHTGRAY, 2)
+    rl.DrawText("Wrong items are never consumed.", 170, 181, 10, rl.GRAY)
 
     count := inventory_count(game)
     if count <= 0 {
@@ -229,8 +229,8 @@ draw_item_use_overlay :: proc(game: ^Game) {
     if found {
         def := item_def(selected)
         draw_item_icon(selected, 610, 215, 70, true)
-        rl.DrawText(def.name, 610, 300, 15, rl.GOLD)
-        rl.DrawText(def.description, 610, 330, 9, rl.LIGHTGRAY)
+        draw_text_wrapped(def.name, 610, 300, 315, 15, 17, rl.GOLD, 2)
+        draw_text_wrapped(def.description, 610, 337, 315, 9, 12, rl.LIGHTGRAY, 5)
         rl.DrawText("E — TRY ITEM", 610, 430, 14, rl.GREEN)
     }
     if game.item_use_feedback == 1 { rl.DrawText("That won't work here.", 610, 470, 14, rl.RED) }

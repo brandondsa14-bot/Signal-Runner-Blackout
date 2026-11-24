@@ -180,6 +180,30 @@
       "h": 120,
       "container": "RECEPTION_SUPPLY",
       "interact": true
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 620,
+      "y": 270,
+      "w": 42,
+      "h": 24,
+      "prop": "RECEPTION_PHONE"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 500,
+      "y": 278,
+      "w": 70,
+      "h": 28,
+      "prop": "RECEPTION_REGISTER"
+    },
+    {
+      "kind": "INSPECTABLE_PROP",
+      "x": 250,
+      "y": 185,
+      "w": 48,
+      "h": 34,
+      "prop": "RECEPTION_BROCHURES"
     }
   ]
 }

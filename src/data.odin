@@ -25,6 +25,7 @@ Tuning :: struct {
     monster_detection_range:    f32,
     monster_hearing_range:      f32,
     monster_alert_seconds:      f32,
+    monster_investigate_seconds:f32,
     monster_lost_seconds:       f32,
     monster_search_seconds:     f32,
     monster_respawn_min:        f32,
@@ -84,6 +85,7 @@ sanitize_tuning :: proc(tuning: ^Tuning) {
     tuning.monster_detection_range = clamp_tuning_value(tuning.monster_detection_range, 60, 520)
     tuning.monster_hearing_range = clamp_tuning_value(tuning.monster_hearing_range, 80, 720)
     tuning.monster_alert_seconds = clamp_tuning_value(tuning.monster_alert_seconds, 0.15, 3)
+    tuning.monster_investigate_seconds = clamp_tuning_value(tuning.monster_investigate_seconds, 0.5, 12)
     tuning.monster_lost_seconds = clamp_tuning_value(tuning.monster_lost_seconds, 0.4, 8)
     tuning.monster_search_seconds = clamp_tuning_value(tuning.monster_search_seconds, 1, 18)
     tuning.monster_respawn_min = clamp_tuning_value(tuning.monster_respawn_min, 1, 40)
@@ -130,6 +132,7 @@ load_tuning :: proc(path: string) -> Tuning {
         monster_detection_range = 250,
         monster_hearing_range = 360,
         monster_alert_seconds = 0.62,
+        monster_investigate_seconds = 2.6,
         monster_lost_seconds = 1.35,
         monster_search_seconds = 4.2,
         monster_respawn_min = 5.0,
@@ -179,6 +182,7 @@ Spawn_Data :: struct {
     target_y:   f32,
     interact:   bool,
     container:  string,
+    prop:       string,
 }
 
 Level_Data :: struct {
@@ -199,6 +203,7 @@ entity_kind_from_string :: proc(kind: string) -> (Entity_Kind, bool) {
     case "MONSTER_ENTRY":          return .MONSTER_ENTRY, true
     case "HIDE_SPOT":              return .HIDE_SPOT, true
     case "SEARCHABLE_CONTAINER":   return .SEARCHABLE_CONTAINER, true
+    case "INSPECTABLE_PROP":       return .INSPECTABLE_PROP, true
     case "FUSE_ITEM":              return .FUSE_ITEM, true
     case "POWER_PANEL":            return .POWER_PANEL, true
     case "SECURITY_CONSOLE":       return .SECURITY_CONSOLE, true
@@ -216,6 +221,9 @@ entity_kind_from_string :: proc(kind: string) -> (Entity_Kind, bool) {
     case "SCREWDRIVER_ITEM":       return .SCREWDRIVER_ITEM, true
     case "MAINT_PANEL":            return .MAINT_PANEL, true
     case "NOISE_PIPE":             return .NOISE_PIPE, true
+    case "PROCESSING_CONSOLE":     return .PROCESSING_CONSOLE, true
+    case "PROCESSING_BRIDGE_LOCK": return .PROCESSING_BRIDGE_LOCK, true
+    case "PROCESSING_EVIDENCE":    return .PROCESSING_EVIDENCE, true
     case "CONTAINMENT_NODE_A":     return .CONTAINMENT_NODE_A, true
     case "CONTAINMENT_NODE_B":     return .CONTAINMENT_NODE_B, true
     case "CONTAINMENT_NODE_C":     return .CONTAINMENT_NODE_C, true
@@ -240,6 +248,7 @@ container_id_from_string :: proc(name: string) -> (Container_ID, bool) {
     switch name {
     case "RECEPTION_DESK":          return .RECEPTION_DESK, true
     case "RECEPTION_SUPPLY":        return .RECEPTION_SUPPLY, true
+    case "SECURITY_DESK":           return .SECURITY_DESK, true
     case "ARCHIVE_FILE_CABINET":    return .ARCHIVE_FILE_CABINET, true
     case "MAINTENANCE_LOCKER":      return .MAINTENANCE_LOCKER, true
     case "STORAGE_PERSONAL_LOCKER": return .STORAGE_PERSONAL_LOCKER, true
@@ -256,6 +265,7 @@ room_id_from_string :: proc(name: string) -> (Room_ID, bool) {
     case "LABORATORY":     return .LABORATORY, true
     case "DETENTION":      return .DETENTION, true
     case "MAINTENANCE":    return .MAINTENANCE, true
+    case "PROCESSING":     return .PROCESSING, true
     case "CONTAINMENT":    return .CONTAINMENT, true
     case "FINAL_AREA":     return .FINAL_AREA, true
     case "STORAGE":        return .STORAGE, true
@@ -272,6 +282,7 @@ room_path :: proc(room: Room_ID) -> string {
     case .LABORATORY:    return "data/levels/laboratory.json"
     case .DETENTION:     return "data/levels/detention.json"
     case .MAINTENANCE:   return "data/levels/maintenance.json"
+    case .PROCESSING:    return "data/levels/processing.json"
     case .CONTAINMENT:   return "data/levels/containment.json"
     case .FINAL_AREA:    return "data/levels/final_area.json"
     case .STORAGE:       return "data/levels/storage.json"
@@ -302,12 +313,18 @@ load_level_file :: proc(game: ^Game, path: string, room: Room_ID) -> bool {
             if len(spawn.container) > 0 {
                 delete(spawn.container)
             }
+            if len(spawn.prop) > 0 {
+                delete(spawn.prop)
+            }
         }
         delete(level.spawns)
     }
 
     game.entity_count = 0
     game.player_index = -1
+    game.interaction_target_index = -1
+    game.interaction_candidate_count = 0
+    game.interaction_cycle = 0
     game.room = room
     room_index := int(room)
     if room_index >= 0 && room_index < ROOM_COUNT {
@@ -332,9 +349,13 @@ load_level_file :: proc(game: ^Game, path: string, room: Room_ID) -> bool {
         container_id: Container_ID = .NONE
         if len(spawn.container) > 0 {
             parsed_container, container_ok := container_id_from_string(spawn.container)
-            if container_ok {
-                container_id = parsed_container
-            }
+            if container_ok { container_id = parsed_container }
+        }
+
+        prop_id: Prop_ID = .NONE
+        if len(spawn.prop) > 0 {
+            parsed_prop, prop_ok := prop_id_from_string(spawn.prop)
+            if prop_ok { prop_id = parsed_prop }
         }
 
         index := add_entity(game, Entity{
@@ -347,6 +368,7 @@ load_level_file :: proc(game: ^Game, path: string, room: Room_ID) -> bool {
             target_position = rl.Vector2{spawn.target_x, spawn.target_y},
             requires_interact = spawn.interact,
             container_id = container_id,
+            prop_id = prop_id,
         })
 
         if kind == .PLAYER {
